@@ -41,7 +41,7 @@ public:
 	}
 
 	void Execute() {
-		DLOG("Action::Execute(): \"" << name << '"');
+		DLOG("Action::Execute(): {}", name);
 		fnOnExecute();
 	}
 };

@@ -1,6 +1,6 @@
+#pragma once
 // This header file is responsible for defining all actions
 
-#pragma once
 #include "../Core.h"
 
 #define MAKE_ACTION(name, func, bind) \
@@ -8,7 +8,6 @@
 		string nameStr = #name; \
 		g_Actions.push_back(Action(nameStr, func, bind)); \
 	}, make_action_##name);
-
 
 #pragma region Notes
 MAKE_ACTION(DeleteSelectedNotes, [] {
@@ -24,7 +23,7 @@ MAKE_ACTION(DeleteSelectedNotes, [] {
 		g_NoteGraph.ClearNotes();
 	}
 
-	DLOG("Deleted " << deletedCount << " notes");
+	DLOG("Deleted {} notes", deletedCount);
 
 }, Action::Keybind( SDLK_DELETE ));
 
@@ -65,7 +64,7 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 		selected->key = highestKey - (selected->key - lowestKey);
 	}
 
-	DLOG("Inverted " << g_NoteGraph.selectedNotes.size() << " notes, key range: " << (int)(highestKey - lowestKey));
+	DLOG("Inverted {} notes, key range: {}", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
 
 	}, Action::Keybind(SDLK_i));
 
@@ -81,7 +80,7 @@ MAKE_ACTION(ShiftSelectedNotesUp, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes)
 		selected->key++;
 
-	DLOG("Moved " << g_NoteGraph.selectedNotes.size() << " notes up");
+	DLOG("Moved {} notes up", g_NoteGraph.selectedNotes.size());
 
 	}, Action::Keybind( SDLK_UP ));
 
@@ -94,7 +93,7 @@ MAKE_ACTION(ShiftSelectedNotesDown, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes)
 		selected->key--;
 
-	DLOG("Moved " << g_NoteGraph.selectedNotes.size() << " notes down");
+	DLOG("Moved {} notes down", g_NoteGraph.selectedNotes.size());
 
 	}, Action::Keybind( SDLK_DOWN ));
 #pragma endregion
@@ -108,7 +107,7 @@ MAKE_ACTION(ShiftSelectedNotesUpOctave, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes)
 		selected->key += KEYS_PER_OCTAVE;
 
-	DLOG("Moved " << g_NoteGraph.selectedNotes.size() << " notes an octave up");
+	DLOG("Moved {} notes an octave up", g_NoteGraph.selectedNotes.size());
 
 	}, Action::Keybind( SDLK_UP, KBFLAG_CTRL ));
 
@@ -121,10 +120,11 @@ MAKE_ACTION(ShiftSelectedNotesDownOctave, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes)
 		selected->key -= KEYS_PER_OCTAVE;
 
-	DLOG("Moved " << g_NoteGraph.selectedNotes.size() << " notes an octave down");
+	DLOG("Moved {} notes an octave down", g_NoteGraph.selectedNotes.size());
 
 	}, Action::Keybind( SDLK_DOWN, KBFLAG_CTRL ));
 #pragma endregion
 #pragma endregion
 #pragma endregion
+
 #undef MAKE_ACTION

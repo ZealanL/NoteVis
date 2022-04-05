@@ -1,6 +1,6 @@
 #include "Framework.h"
 #include "Core/Core.h"
-#include "Core/Render/Renderer.h"
+#include "Render/Renderer.h"
 
 // NOTE: Mostly from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_opengl3/main.cpp
 
@@ -18,29 +18,25 @@ void RunMainLoop() {
 }
 
 int _main() {
-#ifdef _DEBUG
-#ifdef NV_WINDOWS
+#if defined(_DEBUG) and defined(PLAT_WINDOWS)
 	// In debug mode, attach a debug console
 	AllocConsole();
 
 	// Set stdout stream to print there
-	FILE* outStreamFilePtr = nullptr;
+	FILE* outStreamFilePtr = NULL;
 	auto error = freopen_s(&outStreamFilePtr, "CONOUT$", "w", stdout);
 #endif
-#endif
 
-	DLOG("Starting NoteVis v" << NV_VERSION);
+	DLOG("Starting " PROGRAM_NAME " v" PROGRAM_VERSION);
 
 	Renderer::Init();
 	RunMainLoop();
 	Renderer::Shutdown();
 
-	
-	Sleep(-1);
 	return EXITCODE_GOOD;
 }
 
-#ifdef NV_WINDOWS
+#ifdef PLAT_WINDOWS
 #include <Windows.h>
 int WINAPI WinMain(
 	HINSTANCE hInstance,

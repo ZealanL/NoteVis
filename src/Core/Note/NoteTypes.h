@@ -1,13 +1,18 @@
 // Note type and related types
 #pragma once
 #include "../../Framework.h"
-#include "../Types/Color.h"
+#include "../../Types/Vec.h"
+#include "../../Types/Color.h"
 
 #define KEYS_PER_OCTAVE 12
+
 #define KEY_AMOUNT (88 + 9) // Most pianos have 88, I have extended it down to a very low C such that an index 0 key is on C
+#define KEY_AMOUNT_SUB1 (KEY_AMOUNT - 1)
+#define KEY_AMOUNT_SUB1_F ((float)(KEY_AMOUNT - 1))
 
 // Represnted in milliseconds at 60 BPM
-typedef uint32_t NoteTime;
+// Originally this was unsigned, but I changed it to allow for proper negative value correction
+typedef int32_t NoteTime;
 
 // NoteTime each beat (60 BPM ms = 1000 NOTETIME_PER_BEAT)
 #define NOTETIME_PER_BEAT 1000
