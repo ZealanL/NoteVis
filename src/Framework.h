@@ -110,3 +110,6 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define MAX3(a, b, c) MAX(MAX(a, b), c)
 #define MIN3(a, b, c) MIN(MIN(a, b), c)
 #define CLAMP(v, min, max) MAX(min, MIN(v, max))
+
+// For scoped enums that shouldn't be classes
+#define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }

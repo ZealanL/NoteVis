@@ -178,6 +178,7 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\Core\Core.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
+    <ClCompile Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.cpp" />
     <ClCompile Include="src\Render\Draw\Draw.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraphRenderer\NoteGraphRenderer.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -196,8 +197,10 @@
     <ClInclude Include="src\Core\Action\Action.h" />
     <ClInclude Include="src\Core\Action\ActionDefines.h" />
     <ClInclude Include="src\Core\Core.h" />
+    <ClInclude Include="src\Core\Note\MusicTheoryDef.h" />
     <ClInclude Include="src\Core\Note\NoteColors.h" />
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGraph.h" />
+    <ClInclude Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.h" />
     <ClInclude Include="src\Core\Note\NoteTypes.h" />
     <ClInclude Include="src\Render\Draw\Draw.h" />
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGraphRenderer\NoteGraphRenderer.h" />
