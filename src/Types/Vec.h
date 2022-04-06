@@ -116,6 +116,10 @@ SASSERT(sizeof(Vec) == sizeof(ImVec2));
 struct Area {
 	Vec min, max;
 
+	Area() {
+		min = max = Vec(0, 0);
+	}
+ 
 	Area(Vec a, Vec b) {
 		min.x = MIN(a.x, b.x);
 		min.y = MIN(a.y, b.y);
