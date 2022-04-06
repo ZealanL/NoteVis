@@ -85,7 +85,7 @@ struct Vec {
 	}
 
 	bool operator <(Vec a) const {
-		return x < a.x && y < a.y;
+		return x < a.x&& y < a.y;
 	}
 
 	bool operator >(Vec a) const {
@@ -103,7 +103,7 @@ struct Vec {
 	string ToString(bool rounded = true) {
 		return FMT(rounded ? "[%f, %f]" : "[%i, %i]", x, y);
 	}
-	
+
 	ImVec2 ToImVec() {
 		return *(ImVec2*)this;
 	}
@@ -222,12 +222,12 @@ struct Area {
 		return Vec(min.x + GetWidth() * widthRatio, min.y + GetHeight() * heightRatio);
 	}
 
-	Vec TopLeft()		{ return GetPosRel(0, 0); }
-	Vec TopRight()		{ return GetPosRel(1, 0); }
-	Vec Left()			{ return GetPosRel(0, 0.5f); }
-	Vec Right()			{ return GetPosRel(1, 0.5f); }
-	Vec BottomLeft()	{ return GetPosRel(0, 1); }
-	Vec BottomRight()	{ return GetPosRel(1, 1); }
+	Vec TopLeft() { return GetPosRel(0, 0); }
+	Vec TopRight() { return GetPosRel(1, 0); }
+	Vec Left() { return GetPosRel(0, 0.5f); }
+	Vec Right() { return GetPosRel(1, 0.5f); }
+	Vec BottomLeft() { return GetPosRel(0, 1); }
+	Vec BottomRight() { return GetPosRel(1, 1); }
 
 	Area Move(Vec delta) {
 		Area newArea = *this;

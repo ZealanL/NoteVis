@@ -1,8 +1,8 @@
 #pragma once
 
 // Base defines - should be changed
-#define PROGRAM_NAME	"PROGRAM_NAME"
-#define PROGRAM_VERSION "PROGRAM_VERSION"
+#define PROGRAM_NAME	"NoteVis"
+#define PROGRAM_VERSION "v1.0"
 #define DEFAULT_WINDOWSIZE_X 720
 #define DEFAULT_WINDOWSIZE_Y 480
 

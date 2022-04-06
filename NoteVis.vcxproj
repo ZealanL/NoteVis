@@ -181,6 +181,7 @@
     <ClCompile Include="src\Render\Draw\Draw.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraphRenderer\NoteGraphRenderer.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Render\NoteGraphRenderer\NoteGraphRenderer.cpp" />
     <ClCompile Include="src\Render\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -203,6 +204,7 @@
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGraphRenderer\NoteGraphRenderer.h" />
     <ClInclude Include="src\Framework.h" />
     <ClInclude Include="src\Globals.h" />
+    <ClInclude Include="src\Render\NoteGraphRenderer\NoteGraphRenderer.h" />
     <ClInclude Include="src\Render\Renderer.h" />
     <ClInclude Include="src\Types\Color.h" />
     <ClInclude Include="src\Types\Vec.h" />
