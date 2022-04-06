@@ -18,7 +18,6 @@ private:
 	set<Note*> _notes;
 	NoteTime _furthestNoteEndTime;
 public:
-	
 	// Current mode
 	enum {
 		MODE_IDLE,
@@ -27,9 +26,10 @@ public:
 	};
 	int currentMode = MODE_IDLE;
 
-	struct {
-		
-	} modeInfo;
+	struct NoteGraphModeInfo {
+		GraphPos startDragPos;
+	};
+	NoteGraphModeInfo modeInfo;
 
 	NoteTime GetFurthestNoteEndTime() {
 		return _furthestNoteEndTime;
@@ -50,20 +50,18 @@ public:
 	// Horizontal zoom, Pixels per NOTETIME_PER_BEAT NoteTime
 	float hZoom = 100.f;
 
-	// Vertical scale/zoom, how high the full notegraph is 
-	float vScale = 1000.f;
+	// Vertical scale/zoom, how high the full notegraph is relative to screen height 
+	float vScale = 1.f;
 
-	// Convert a graphPos into a screen position
-	// screenSize: needed for centering
-    Vec ToScreenPos(GraphPos graphPos, Vec screenSize);
-	GraphPos ToGraphPos(Vec screenPos, Vec screenSize);
+    
+	float GetAreaScreenHeight(Area screenArea);
+    Vec ToScreenPos(GraphPos graphPos, Area screenArea);
+	GraphPos ToGraphPos(Vec screenPos, Area screenArea);
 
 	int GetNoteCount();
 	const set<Note*>& GetNotes() { return _notes; }
-
 	Note* AddNote(Note note); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
-
 	void ClearNotes();
 
 	// Prevent memory leak

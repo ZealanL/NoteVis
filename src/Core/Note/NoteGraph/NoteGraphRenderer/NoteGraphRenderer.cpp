@@ -4,23 +4,21 @@
 #include "../../NoteColors.h"
 
 void NoteGraphRenderer::DrawNoteGraph(NoteGraph& graph, Area screenArea) {
-	Vec screenSize = screenArea.GetSize();
-
 	Vec relativeMousePos = g_MousePos - screenArea.min;
-	GraphPos graphMousePos = graph.ToGraphPos(relativeMousePos, screenSize);
+	GraphPos graphMousePos = graph.ToGraphPos(relativeMousePos, screenArea);
 
 	KeyInt graphMouseKey = roundf(graphMousePos.y);
 	NoteTime graphMouseTime = graphMousePos.x;
 
-	float noteSize = floorf(graph.vScale / KEY_AMOUNT);
+	float noteSize = floorf(graph.GetAreaScreenHeight(screenArea) / KEY_AMOUNT);
 
 	Draw::Rect(screenArea.min, screenArea.max, COL_BLACK);
 
-	float minDrawX = MAX(screenArea.min.x, graph.ToScreenPos({ 0,0 }, screenSize).x);
+	float minDrawX = MAX(screenArea.min.x, graph.ToScreenPos({ 0,0 }, screenArea).x);
 
 	// Horizontal slot lines
 	for (int i = 0; i < KEY_AMOUNT; i++) {
-		auto screenY = screenArea.min.y + graph.ToScreenPos(GraphPos(0, i), screenSize).y;
+		auto screenY = screenArea.min.y + graph.ToScreenPos(GraphPos(0, i), screenArea).y;
 
 		Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(screenArea.max.x, screenY), Color(25, 25, 25));
 	}
@@ -35,7 +33,7 @@ void NoteGraphRenderer::DrawNoteGraph(NoteGraph& graph, Area screenArea) {
 		// More alpha = more important line
 		int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
 
-		auto screenX = screenArea.min.x + graph.ToScreenPos(GraphPos(t, 0), screenSize).x;
+		auto screenX = screenArea.min.x + graph.ToScreenPos(GraphPos(t, 0), screenArea).x;
 
 		Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y),
 			Color(255, 255, 255, alpha));
@@ -48,8 +46,8 @@ void NoteGraphRenderer::DrawNoteGraph(NoteGraph& graph, Area screenArea) {
 
 		for (Note* note : graph) {
 			// TODO: Sub-optimal check requires function calls
-			Vec screenPos = screenArea.min + graph.ToScreenPos(GraphPos(note->time, note->key), screenSize);
-			float tailEndX = screenArea.min.x + graph.ToScreenPos(GraphPos(note->time + note->duration, 0), screenSize).x;
+			Vec screenPos = screenArea.min + graph.ToScreenPos(GraphPos(note->time, note->key), screenArea);
+			float tailEndX = screenArea.min.x + graph.ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
 
 			if (screenPos.x > screenArea.max.x || tailEndX < screenArea.min.x)
 				continue;
@@ -86,8 +84,8 @@ void NoteGraphRenderer::DrawNoteGraph(NoteGraph& graph, Area screenArea) {
 				graph.hoveredNote = note;
 			}
 
-			Vec screenPos = screenArea.min + graph.ToScreenPos(GraphPos(note->time, note->key), screenSize);
-			float tailEndX = screenArea.min.x + graph.ToScreenPos(GraphPos(note->time + note->duration, 0), screenSize).x;
+			Vec screenPos = screenArea.min + graph.ToScreenPos(GraphPos(note->time, note->key), screenArea);
+			float tailEndX = screenArea.min.x + graph.ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
 
 			// Align pixel-perfect
 			screenPos = screenPos.Rounded();
@@ -127,5 +125,12 @@ void NoteGraphRenderer::DrawNoteGraph(NoteGraph& graph, Area screenArea) {
 				Draw::Rect(screenPos - noteHeadHollowSize_half, screenPos + noteHeadHollowSize_half, COL_BLACK);
 			}
 		}
+	}
+
+	if (graph.currentMode == NoteGraph::MODE_RECTSELECT) {
+		Vec start = graph.ToScreenPos(graph.modeInfo.startDragPos, screenArea);
+
+		Area selectArea = { graph.ToScreenPos(graph.modeInfo.startDragPos, screenArea), relativeMousePos };
+		Draw::ORect(selectArea, COL_WHITE);
 	}
 }

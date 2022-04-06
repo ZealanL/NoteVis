@@ -1,22 +1,28 @@
 #include "NoteGraph.h"
 
-Vec NoteGraph::ToScreenPos(GraphPos graphPos, Vec screenSize) {
+
+float NoteGraph::GetAreaScreenHeight(Area screenArea) {
+	return vScale * (screenArea.GetHeight() - (screenArea.GetHeight() / KEY_AMOUNT) * 2);
+}
+
+Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
 	int relativeTime = graphPos.x - hScroll;
 	float outX = (relativeTime / 1000.f) * hZoom;
 
-	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F /2.f)) / KEY_AMOUNT_SUB1_F) * vScale;
-	return Vec(outX + screenSize.x/2, outY + screenSize.y/2);
+	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F /2.f)) / KEY_AMOUNT_SUB1_F) * GetAreaScreenHeight(screenArea);
+	return Vec(outX, outY) + screenArea.GetCenter();
 }
 
-GraphPos NoteGraph::ToGraphPos(Vec screenPos, Vec screenSize) {
-	float decenteredX = screenPos.x - screenSize.x / 2.f;
-	NoteTime x = hScroll + (NoteTime)((1000.f * decenteredX) / hZoom);
+GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
+	screenPos -= screenArea.GetCenter();
 
-	float decenteredY = screenPos.y - screenSize.y / 2.f;
+	NoteTime x = hScroll + (NoteTime)((1000.f * screenPos.x) / hZoom);
+
+	float height = GetAreaScreenHeight(screenArea);
 
 	// Didn't feel like doing algebra today so:
 	// https://www.wolframalpha.com/input?i=x+%3D+-%28%28y+-+%28a+%2F2%29%29+%2F+a%29+*+v%2C+solve+for+y
-	float y = (KEY_AMOUNT_SUB1_F * (vScale - 2 * decenteredY)) / (2 * vScale);
+	float y = (KEY_AMOUNT_SUB1_F * (height - 2 * screenPos.y)) / (2 * height);
 
 	return { x, y };
 }
