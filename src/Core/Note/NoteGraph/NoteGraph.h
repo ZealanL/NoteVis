@@ -6,6 +6,11 @@ struct TimeSignature {
 	// TODO: Denominator so we can support 7/8 and such
 };
 
+struct GraphPos {
+	NoteTime x;
+	float y;
+};
+
 // NOTE: Rendering of the NoteGraph is Rendering/NoteGraphRender
 class NoteGraph {
 private:
@@ -14,6 +19,18 @@ private:
 	NoteTime _furthestNoteEndTime;
 public:
 	
+	// Current mode
+	enum {
+		MODE_IDLE,
+		MODE_RECTSELECT,
+		MODE_PLAY
+	};
+	int currentMode = MODE_IDLE;
+
+	struct {
+		
+	} modeInfo;
+
 	NoteTime GetFurthestNoteEndTime() {
 		return _furthestNoteEndTime;
 	}
@@ -36,16 +53,10 @@ public:
 	// Vertical scale/zoom, how high the full notegraph is 
 	float vScale = 1000.f;
 
-	// Convert a note time and y (corresponding to note's key) into a screen position
-	// y: represents key slot coordinate, can have decimal value obviously
+	// Convert a graphPos into a screen position
 	// screenSize: needed for centering
-	Vec ToScreenPos(NoteTime time, float y, Vec screenSize);
-
-	// Convert a screen Y to a Y position on the graph
-	float ScreenYToGraphY(float screenY, Vec screenSize);
-
-	// Convert a screen X to a NoteTime on the graph
-	NoteTime ScreenXToNoteTime(float screenX, Vec screenSize);
+    Vec ToScreenPos(GraphPos graphPos, Vec screenSize);
+	GraphPos ToGraphPos(Vec screenPos, Vec screenSize);
 
 	int GetNoteCount();
 	const set<Note*>& GetNotes() { return _notes; }

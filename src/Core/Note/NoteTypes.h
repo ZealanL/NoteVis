@@ -19,12 +19,12 @@ struct Note {
 	// Octave index
 	KeyInt GetOctave() const { return key / KEYS_PER_OCTAVE; }
 
-	bool IsInKey(const KeyMasks::KeyNoteMask& mask, int offset) const {
+	bool IsInKey(const KeyMask::Mask& mask, int offset) const {
 		return mask[(key + offset) % KEYS_PER_OCTAVE];
 	}
 
 	bool IsBlackKey() const {
-		return !IsInKey(KeyMasks::MAJOR, 0);
+		return !IsInKey(KeyMask::MAJOR, 0);
 	}
 
 	bool IsValid() const {

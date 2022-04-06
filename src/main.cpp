@@ -27,7 +27,7 @@ int _main() {
 	auto error = freopen_s(&outStreamFilePtr, "CONOUT$", "w", stdout);
 #endif
 
-	DLOG("Starting " PROGRAM_NAME " v" PROGRAM_VERSION);
+	DLOG("Starting " PROGRAM_NAME " " PROGRAM_VERSION);
 
 	Renderer::Init();
 	RunMainLoop();
