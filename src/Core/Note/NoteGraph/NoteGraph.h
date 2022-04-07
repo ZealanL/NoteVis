@@ -63,7 +63,7 @@ public:
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
 	void ClearNotes();
 
-	void Draw(Area screenArea);
+	void Render(Area screenArea);
 	void UpdateWithInput(Area screenArea, SDL_Event& e);
 
 	// Prevent memory leak

@@ -4,7 +4,7 @@
 #include "../../../Globals.h"
 
 float NoteGraph::GetNoteAreaScreenHeight(Area screenArea) {
-	return vScale * (screenArea.GetHeight() - (screenArea.GetHeight() / KEY_AMOUNT) * 2);
+	return vScale * (screenArea.Height() - (screenArea.Height() / KEY_AMOUNT) * 2);
 }
 
 Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
@@ -12,11 +12,11 @@ Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
 	float outX = (relativeTime / 1000.f) * hZoom;
 
 	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F /2.f)) / KEY_AMOUNT_SUB1_F) * GetNoteAreaScreenHeight(screenArea);
-	return Vec(outX, outY) + screenArea.GetCenter();
+	return Vec(outX, outY) + screenArea.Center();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
-	screenPos -= screenArea.GetCenter();
+	screenPos -= screenArea.Center();
 
 	NoteTime x = hScroll + (NoteTime)((1000.f * screenPos.x) / hZoom);
 
@@ -75,20 +75,39 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 	if (e.type == SDL_MOUSEWHEEL) {
 		hScroll += -e.wheel.y * (isShiftDown ? 5000 : 500);
 		hScroll = CLAMP(g_NoteGraph.hScroll, 0, g_NoteGraph.GetFurthestNoteEndTime());
-		return;
 	}
 
 	if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
+		bool down = e.type == SDL_MOUSEBUTTONDOWN;
 		int mouseButton = e.button.button;
 		if (mouseButton == 1) {
-			// ...
+			
+		}
+	}
+
+	{ // Always update hovered note (this could change with mouse moving, scrolling, window resize, etc.)
+		GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
+		KeyInt graphMouseKey = roundf(graphMousePos.y);
+		hoveredNote = NULL;
+		for (Note* note : *this) {
+			if (
+				(graphMousePos.x >= note->time && graphMousePos.x < note->time + note->duration) // X is overlapping
+				&& (graphMouseKey == note->key) // Y is overlapping
+				) {
+
+
+				// Prioritize later notes
+				if (hoveredNote && note->time < hoveredNote->time)
+					continue;
+
+				hoveredNote = note;
+			}
 		}
 	}
 }
 
-void NoteGraph::Draw(Area screenArea) {
-	Vec relativeMousePos = g_MousePos - screenArea.min;
-	GraphPos graphMousePos = ToGraphPos(relativeMousePos, screenArea);
+void NoteGraph::Render(Area screenArea) {
+	GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
 
 	KeyInt graphMouseKey = roundf(graphMousePos.y);
 	NoteTime graphMouseTime = graphMousePos.x;
@@ -138,7 +157,7 @@ void NoteGraph::Draw(Area screenArea) {
 			notesToDraw.push_back(note);
 		}
 
-		// Lambda sorting
+		// Lambda sorting by time
 		std::sort(notesToDraw.begin(), notesToDraw.end(),
 			[](const Note* a, const Note* b) -> bool {
 				return a->time < b->time;
@@ -151,21 +170,8 @@ void NoteGraph::Draw(Area screenArea) {
 
 		bool anySelected = !selectedNotes.empty();
 
-		bool hoveredNoteFound = false;
-
 		for (Note* note : notesToDraw) {
 			bool selected = IsNoteSelected(note);
-
-			bool hovered =
-				(graphMouseTime >= note->time && graphMouseTime < note->time + note->duration)
-				&& (graphMouseKey == note->key)
-				&& !hoveredNoteFound;
-
-			// TODO: Move hovered note updating elsewhere
-			if (hovered) {
-				hoveredNoteFound = true;
-				hoveredNote = note;
-			}
 
 			Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
 			float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
@@ -191,9 +197,8 @@ void NoteGraph::Draw(Area screenArea) {
 			}
 
 			// Brighten hovered notes
-			if (hovered) {
+			if (hoveredNote == note)
 				col = col.RatioBrighten(1.5f);
-			}
 
 			// Black border for spacing
 			Draw::Rect(headArea.Expand(1), COL_BLACK);
@@ -204,16 +209,15 @@ void NoteGraph::Draw(Area screenArea) {
 			Draw::Rect(tailArea, col);
 
 			// Hollow note head if black key
-			if (note->IsBlackKey()) {
+			if (note->IsBlackKey())
 				Draw::Rect(screenPos - noteHeadHollowSize_half, screenPos + noteHeadHollowSize_half, COL_BLACK);
-			}
 		}
 	}
 
 	if (currentMode == NoteGraph::MODE_RECTSELECT) {
 		Vec start = ToScreenPos(modeInfo.startDragPos, screenArea);
 
-		Area selectArea = { ToScreenPos(modeInfo.startDragPos, screenArea), relativeMousePos };
+		Area selectArea = { ToScreenPos(modeInfo.startDragPos, screenArea), g_MousePos };
 		Draw::ORect(selectArea, COL_WHITE);
 	}
 }
