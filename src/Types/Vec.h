@@ -101,16 +101,19 @@ struct Vec {
 	}
 
 	string ToString(bool rounded = true) {
-		return FMT(rounded ? "[%f, %f]" : "[%i, %i]", x, y);
+		if (rounded) {
+			return FMT("[{}, {}]", (int)x, (int)y);
+		} else {
+			return FMT("[{}, {}]", x, y);
+		}
 	}
 
 	ImVec2 ToImVec() {
+		// Required for forced conversion
+		SASSERT(sizeof(Vec) == sizeof(ImVec2));
 		return *(ImVec2*)this;
 	}
 };
-
-// Required for forced conversion
-SASSERT(sizeof(Vec) == sizeof(ImVec2));
 
 // 2D Area made from 2 Vecs, min and max
 struct Area {
