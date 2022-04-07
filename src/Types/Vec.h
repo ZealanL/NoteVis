@@ -156,17 +156,17 @@ struct Area {
 		return Area(combinedMin, combinedMax);
 	}
 
-	float GetWidth() { return max.x - min.x; }
-	float GetHeight() { return max.y - min.y; }
-	Vec GetSize() { return Vec(GetWidth(), GetHeight()); }
+	float Width() { return max.x - min.x; }
+	float Height() { return max.y - min.y; }
+	Vec Size() { return Vec(Width(), Height()); }
 
-	Vec GetCenter() {
+	Vec Center() {
 		return (min + max) / 2;
 	}
 
 	Area HDivRel(float beginRatio, float endRatio) {
 		assert(beginRatio > endRatio);
-		float baseWidth = GetWidth();
+		float baseWidth = Width();
 
 		Area newArea = *this;
 		newArea.min.x = min.x + beginRatio * baseWidth;
@@ -176,7 +176,7 @@ struct Area {
 
 	Area VDivRel(float beginRatio, float endRatio) {
 		assert(beginRatio > endRatio);
-		float baseHeight = GetHeight();
+		float baseHeight = Height();
 
 		Area newArea = *this;
 		newArea.min.y = min.y + beginRatio * baseHeight;
@@ -203,21 +203,21 @@ struct Area {
 	// Get a horizontal row from the top, down a specific height
 	Area Row(float height, bool clip = false) {
 		Area newArea = *this;
-		newArea.max = newArea.min + (clip ? MIN(GetHeight(), height) : height);
+		newArea.max = newArea.min + (clip ? MIN(Height(), height) : height);
 	}
 
 	// Area is expanded outwards by a certain amount (or shrunk if negative)
 	Area Expand(float amount) {
-		Vec expandVec = Vec(MIN(amount, GetWidth() / 2), MIN(amount, GetHeight() / 2));
+		Vec expandVec = Vec(MIN(amount, Width() / 2), MIN(amount, Height() / 2));
 		return Area(min - expandVec, max + expandVec);
 	}
 
 	// Width or height is clamped such that the area is a square
 	Area SquareShrink(bool center = false) {
-		float smallestSize = MIN(GetWidth(), GetHeight());
+		float smallestSize = MIN(Width(), Height());
 
 		if (center) {
-			auto centerPos = GetCenter();
+			auto centerPos = Center();
 			auto sizeVec = Vec(smallestSize / 2);
 			return Area(centerPos - sizeVec, centerPos + sizeVec);
 		} else {
@@ -226,7 +226,7 @@ struct Area {
 	}
 
 	Vec GetPosRel(float widthRatio, float heightRatio) {
-		return Vec(min.x + GetWidth() * widthRatio, min.y + GetHeight() * heightRatio);
+		return Vec(min.x + Width() * widthRatio, min.y + Height() * heightRatio);
 	}
 
 	Vec TopLeft() { return GetPosRel(0, 0); }
@@ -244,7 +244,7 @@ struct Area {
 	}
 
 	Area MoveRel(float xRel, float yRel) {
-		Vec moveVec = Vec(xRel * GetWidth(), yRel * GetHeight());
+		Vec moveVec = Vec(xRel * Width(), yRel * Height());
 		return Move(moveVec);
 	}
 
@@ -252,10 +252,10 @@ struct Area {
 		Area newArea = *this;
 
 		if (center)
-			pos -= GetSize() / 2;
+			pos -= Size() / 2;
 
 		newArea.min = pos;
-		newArea.max = pos + GetSize();
+		newArea.max = pos + Size();
 
 		return newArea;
 	}
