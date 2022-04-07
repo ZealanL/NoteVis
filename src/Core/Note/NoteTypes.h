@@ -29,8 +29,8 @@ struct Note {
 
 	bool IsValid() const {
 		return 
-			(key < KEY_AMOUNT) // Key is out-of-bounds (very bad)
-			&& NoteTime(time + duration) > time; // Note duration is so long that it will overflow NoteTime integer
+			(key < KEY_AMOUNT) // Key is not out-of-bounds (that would be very bad)
+			&& time >= 0; // Note time is valid
 	}
 };
 #pragma endregion

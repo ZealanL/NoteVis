@@ -12,7 +12,7 @@ Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
 	float outX = (relativeTime / 1000.f) * hZoom;
 
 	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F /2.f)) / KEY_AMOUNT_SUB1_F) * GetNoteAreaScreenHeight(screenArea);
-	return Vec(outX, outY) + screenArea.Center();
+return Vec(outX, outY) + screenArea.Center();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
@@ -29,24 +29,66 @@ GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
 	return { x, y };
 }
 
+void NoteGraph::CheckFixNoteOverlap(Note* note) {
+	auto& slot = _noteSlots[note->key];
+	for (auto itr = slot.begin(); itr != slot.end(); itr++) {
+		Note* otherNote = *itr;
+		if (note == otherNote)
+			continue;
+
+		if (
+			note->time == otherNote->time // Direct collide
+			|| (note->time < otherNote->time && note->time + note->duration > otherNote->time) // Our tail overlaps them
+			) {
+
+			itr--;
+			RemoveNote(otherNote);
+		} else {
+			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) // Their tail overlaps us
+				otherNote->duration = note->time - otherNote->time; // Clamp tail
+		}
+	}
+}
+
+void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap) {
+	IASSERT(newY, KEY_AMOUNT);
+
+	if (newY != note->key) {
+		// Update slots if needed
+		_noteSlots[note->key].erase(note);
+		_noteSlots[newY].insert(note);
+	}
+
+	note->time = newX;
+	note->key = newY;
+
+	if (!ignoreOverlap)
+		CheckFixNoteOverlap(note);
+}
+
 Note* NoteGraph::AddNote(Note note) {
+	ASSERT(note.IsValid());
+
 	Note* newNote = new Note(note);
 	_notes.insert(newNote);
+	_noteSlots[note.key].insert(newNote);
 
 	// Update _furthestNoteEndTime
 	NoteTime endTime = newNote->time + newNote->duration;
 	_furthestNoteEndTime = MAX(_furthestNoteEndTime, endTime);
+
+	CheckFixNoteOverlap(newNote);
 
 	return newNote;
 }
 
 bool NoteGraph::RemoveNote(Note* note) {
 
-	if (note == hoveredNote) {
+	if (note == hoveredNote)
 		hoveredNote = NULL;
-	}
 
 	selectedNotes.erase(note);
+	_noteSlots[note->key].erase(note);
 	bool found = _notes.erase(note);
 	if (found)
 		delete note;
@@ -58,8 +100,13 @@ void NoteGraph::ClearNotes() {
 		delete note;
 	}
 
-	_notes.clear();
 	selectedNotes.clear();
+	
+	for (auto& slot : _noteSlots)
+		slot.clear();
+	
+	_notes.clear();
+
 	hoveredNote = NULL;
 }
 
@@ -81,7 +128,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		bool down = e.type == SDL_MOUSEBUTTONDOWN;
 		int mouseButton = e.button.button;
 		if (mouseButton == 1) {
-			
+
 		}
 	}
 
@@ -104,6 +151,28 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			}
 		}
 	}
+}
+
+bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY) {
+	// Check
+	for (Note* note : selectedNotes) {
+		if (note->time + amountX < 0)
+			return false; // Horizontal limit reached
+
+		int testNewKey = note->key + amountY;
+		if (testNewKey < 0 || testNewKey >= KEY_AMOUNT)
+			return false; // Vertical limit reached
+	}
+
+	// Move
+	for (Note* note : selectedNotes)
+		MoveNote(note, note->time + amountX, note->key + amountY, true);
+
+	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
+	for (Note* note : selectedNotes)
+		CheckFixNoteOverlap(note);
+
+	return true;
 }
 
 void NoteGraph::Render(Area screenArea) {

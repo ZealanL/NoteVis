@@ -17,6 +17,9 @@ private:
 	// Private to prevent manual modification, this would cause serious desyncronization issues
 	set<Note*> _notes;
 	NoteTime _furthestNoteEndTime;
+
+	// Keep track of what notes are in what key slot for fast comparisons
+	set<Note*> _noteSlots[KEY_AMOUNT];
 public:
 	// Current mode
 	enum {
@@ -57,6 +60,12 @@ public:
     Vec ToScreenPos(GraphPos graphPos, Area screenArea);
 	GraphPos ToGraphPos(Vec screenPos, Area screenArea);
 
+	// Fix any potential overlap with this note, will only modify/remove other notes
+    void CheckFixNoteOverlap(Note* note);
+
+	// ignoreOverlap: Don't call CheckFixNoteOverlap after moving
+	void MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap = false);
+
 	int GetNoteCount();
 	const set<Note*>& GetNotes() { return _notes; }
 	Note* AddNote(Note note); // Returns pointer to added note
@@ -65,6 +74,9 @@ public:
 
 	void Render(Area screenArea);
 	void UpdateWithInput(Area screenArea, SDL_Event& e);
+
+	// Returns true if they could be moved, false if not
+	bool TryMoveSelectedNotes(int amountX, int amountY);
 
 	// Prevent memory leak
 	~NoteGraph() {
