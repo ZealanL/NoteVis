@@ -8,6 +8,7 @@ void RunMainLoop() {
 	while (true) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
+			g_KeyboardState = SDL_GetKeyboardState(NULL);
 			Core::ProcessEvent(event);
 		}
 

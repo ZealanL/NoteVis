@@ -53,8 +53,7 @@ public:
 	// Vertical scale/zoom, how high the full notegraph is relative to screen height 
 	float vScale = 1.f;
 
-    
-	float GetAreaScreenHeight(Area screenArea);
+	float GetNoteAreaScreenHeight(Area screenArea);
     Vec ToScreenPos(GraphPos graphPos, Area screenArea);
 	GraphPos ToGraphPos(Vec screenPos, Area screenArea);
 
@@ -63,6 +62,9 @@ public:
 	Note* AddNote(Note note); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
 	void ClearNotes();
+
+	void Draw(Area screenArea);
+	void UpdateWithInput(Area screenArea, SDL_Event& e);
 
 	// Prevent memory leak
 	~NoteGraph() {

@@ -12,10 +12,4 @@ namespace Core {
 	void OnUserExit();
 
 	void ProcessEvent(SDL_Event& e);
-
-	inline Vec GetWindowSize() {
-		int w, h;
-		SDL_GetWindowSize(g_SDL_Window, &w, &h);
-		return Vec(w, h);
-	}
 }
