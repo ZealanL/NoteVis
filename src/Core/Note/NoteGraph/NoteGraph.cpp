@@ -31,8 +31,8 @@ GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
 
 void NoteGraph::CheckFixNoteOverlap(Note* note) {
 	auto& slot = _noteSlots[note->key];
-	for (auto itr = slot.begin(); itr != slot.end(); itr++) {
-		Note* otherNote = *itr;
+	vector<Note*> notesToRemove;
+	for (Note* otherNote : slot) {
 		if (note == otherNote)
 			continue;
 
@@ -41,16 +41,19 @@ void NoteGraph::CheckFixNoteOverlap(Note* note) {
 			|| (note->time < otherNote->time && note->time + note->duration > otherNote->time) // Our tail overlaps them
 			) {
 
-			itr--;
-			RemoveNote(otherNote);
+			notesToRemove.push_back(otherNote);
 		} else {
 			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) // Their tail overlaps us
 				otherNote->duration = note->time - otherNote->time; // Clamp tail
 		}
 	}
+
+	for (Note* toRemove : notesToRemove)
+		RemoveNote(toRemove);
 }
 
 void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap) {
+	ASSERT(note->IsValid());
 	IASSERT(newY, KEY_AMOUNT);
 
 	if (newY != note->key) {
@@ -83,7 +86,6 @@ Note* NoteGraph::AddNote(Note note) {
 }
 
 bool NoteGraph::RemoveNote(Note* note) {
-
 	if (note == hoveredNote)
 		hoveredNote = NULL;
 
@@ -115,8 +117,18 @@ int NoteGraph::GetNoteCount() {
 }
 
 void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
+	bool isLMouseDown = g_MouseState & SDL_BUTTON_LMASK;
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
 	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
+	
+	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, screenArea);
+	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
+
+	static GraphPos lastMouseGraphPos;
+	bool mouseMoved = mouseGraphPos != lastMouseGraphPos;
+	lastMouseGraphPos = mouseGraphPos;
+
+	bool isDragging = isLMouseDown && mouseMoved;
 
 	// Scroll graph
 	if (e.type == SDL_MOUSEWHEEL) {
@@ -124,36 +136,125 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		hScroll = CLAMP(g_NoteGraph.hScroll, 0, g_NoteGraph.GetFurthestNoteEndTime());
 	}
 
+	// Mouse click
 	if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
 		bool down = e.type == SDL_MOUSEBUTTONDOWN;
 		int mouseButton = e.button.button;
 		if (mouseButton == 1) {
+			switch (currentMode) {
+			case MODE_IDLE:
+				if (down) {
+					modeInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
+				} else {
+					if (!isShiftDown) // Shift-click to keep selecting more notes
+						selectedNotes.clear();
 
-		}
-	}
+					for (Note* note : _noteSlots[mouseGraphKey]) {
+						if (note->time <= mouseGraphPos.x && note->time + note->duration >= mouseGraphPos.x) {
 
-	{ // Always update hovered note (this could change with mouse moving, scrolling, window resize, etc.)
-		GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
-		KeyInt graphMouseKey = roundf(graphMousePos.y);
-		hoveredNote = NULL;
-		for (Note* note : *this) {
-			if (
-				(graphMousePos.x >= note->time && graphMousePos.x < note->time + note->duration) // X is overlapping
-				&& (graphMouseKey == note->key) // Y is overlapping
-				) {
+							// Toggle selection when holding shift
+							if (!isShiftDown || !selectedNotes.erase(note)) {
+								selectedNotes.insert(note);
+							}
 
+							break;
+						}
+					}
+				}
+				break;
 
-				// Prioritize later notes
-				if (hoveredNote && note->time < hoveredNote->time)
-					continue;
+			case MODE_RECTSELECT:
+			case MODE_DRAGNOTES:
+				// Stop selecting/dragging
+				currentMode = MODE_IDLE;
 
-				hoveredNote = note;
+				for (Note* selectedNote : selectedNotes)
+					CheckFixNoteOverlap(selectedNote);
+
+				break;
 			}
 		}
 	}
+
+	if (isDragging) {
+		if (isControlDown) {
+			// Start rect selection
+			currentMode = MODE_RECTSELECT;
+		} else {
+			// Standard selection
+			// Also possible drag
+			currentMode = MODE_DRAGNOTES;
+		}
+	}
+
+	{ // Update hoveredNote
+		if (currentMode == MODE_IDLE) {
+			if (mouseMoved) {
+				hoveredNote = NULL;
+				for (Note* note : *this) {
+					if (
+						(mouseGraphPos.x >= note->time && mouseGraphPos.x < note->time + note->duration) // X is overlapping
+						&& (mouseGraphKey == note->key) // Y is overlapping
+						) {
+
+						// Prioritize later notes
+						if (hoveredNote && note->time < hoveredNote->time)
+							continue;
+
+						hoveredNote = note;
+					}
+				}
+			}
+		} else {
+			hoveredNote = NULL; // Note hovering doesn't exist in other modes
+		}
+	}
+
+	if (currentMode == MODE_RECTSELECT && mouseMoved) {
+		{ // Update selected notes in rect
+			GraphPos a = modeInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
+
+			NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
+			KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
+
+			selectedNotes.clear();
+			for (Note* note : *this) {
+				if (note->time + note->duration >= startTime && note->time <= endTime)
+					if (note->key >= startKey && note->key <= endKey)
+							selectedNotes.insert(note);
+			}
+		}
+	}
+
+	if (currentMode == MODE_DRAGNOTES && mouseMoved) {
+		if (!selectedNotes.empty()) {
+			int timeDelta = mouseGraphPos.x - modeInfo.startDragPos.x;
+			int keyDelta = roundf(mouseGraphPos.y - modeInfo.startDragPos.y);
+
+			Note* first = *selectedNotes.begin();
+			NoteTime minTime = first->time;
+			KeyInt minKey = first->key, maxKey = first->key;
+			for (Note* note : selectedNotes) {
+				minKey = MIN(note->key, minKey);
+				maxKey = MAX(note->key, maxKey);
+				minTime = MIN(note->time, minTime);
+			}
+
+			// Limit move
+			keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
+			timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
+
+			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
+
+				modeInfo.startDragPos.x += timeDelta;
+				modeInfo.startDragPos.y += keyDelta;
+			}
+		}
+		
+	}
 }
 
-bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY) {
+bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
 	// Check
 	for (Note* note : selectedNotes) {
 		if (note->time + amountX < 0)
@@ -168,11 +269,40 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY) {
 	for (Note* note : selectedNotes)
 		MoveNote(note, note->time + amountX, note->key + amountY, true);
 
+	
 	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
-	for (Note* note : selectedNotes)
-		CheckFixNoteOverlap(note);
+	if (!ignoreOverlap)
+		for (Note* note : selectedNotes)
+			CheckFixNoteOverlap(note);
 
 	return true;
+}
+
+void NoteGraph::Serialize(ByteDataSteam& bytesOut) {
+	bytesOut.reserve(GetNoteCount() * sizeof(Note));
+
+	for (Note* note : _notes) {
+		bytesOut.WriteAsBytes(note->key);
+		bytesOut.WriteAsBytes(note->time);
+		bytesOut.WriteAsBytes(note->duration);
+		bytesOut.WriteAsBytes(note->velocity);
+	}
+
+	DLOG("NoteGraph::Serialize(): Wrote {} notes", _notes.size());
+}
+
+bool NoteGraph::Deserialize(ByteDataSteam::ReadIterator& bytesIn) {
+	int notesRead;
+	for (notesRead = 0; bytesIn.BytesLeft() > sizeof(Note); notesRead++) {
+		Note note;
+		bytesIn.Read(&note.key);
+		bytesIn.Read(&note.time);
+		bytesIn.Read(&note.duration);
+		bytesIn.Read(&note.velocity);
+		AddNote(note);
+	}
+
+	DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
 }
 
 void NoteGraph::Render(Area screenArea) {
@@ -237,7 +367,17 @@ void NoteGraph::Render(Area screenArea) {
 		float noteHeadHollowSize_half = noteSize / 3;
 		float noteTailGap = MAX(1.f, roundf(noteSize / 6.f));
 
-		bool anySelected = !selectedNotes.empty();
+		bool dimNonSelected;
+		switch (currentMode) {
+		case MODE_PLAY:
+			dimNonSelected = false;
+			break;
+		case MODE_RECTSELECT:
+			dimNonSelected = true;
+			break;
+		default:
+			dimNonSelected = !selectedNotes.empty();
+		}
 
 		for (Note* note : notesToDraw) {
 			bool selected = IsNoteSelected(note);
@@ -258,11 +398,8 @@ void NoteGraph::Render(Area screenArea) {
 				Draw::Rect(tailArea.Expand(2), COL_WHITE);
 
 			} else {
-				if (anySelected) {
-					// Other notes are selected
-					// Dim the color of this note to make it more clear it is NOT selected
+				if (dimNonSelected)
 					col = col.RatioBrighten(0.35f);
-				}
 			}
 
 			// Brighten hovered notes

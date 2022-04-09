@@ -20,6 +20,7 @@ GBLVAR(vector<Action>,	Actions);
 
 GBLVAR(NoteGraph, NoteGraph);
 GBLVAR(const BYTE*, KeyboardState);
+GBLVAR(uint32, MouseState);
 
 #pragma endregion
 #undef GBLVAR

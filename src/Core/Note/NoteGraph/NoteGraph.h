@@ -1,5 +1,6 @@
 #pragma once
 #include "../NoteTypes.h"
+#include "../../../Types/ByteDataSteam.h"
 
 struct TimeSignature {
 	int num = 4;
@@ -9,6 +10,10 @@ struct TimeSignature {
 struct GraphPos {
 	NoteTime x;
 	float y;
+
+	friend bool operator==(const GraphPos& a, const GraphPos& b) {
+		return a.x == b.x && a.y == b.y;
+	}
 };
 
 // NOTE: Rendering of the NoteGraph is Rendering/NoteGraphRender
@@ -25,6 +30,7 @@ public:
 	enum {
 		MODE_IDLE,
 		MODE_RECTSELECT,
+		MODE_DRAGNOTES,
 		MODE_PLAY
 	};
 	int currentMode = MODE_IDLE;
@@ -56,6 +62,10 @@ public:
 	// Vertical scale/zoom, how high the full notegraph is relative to screen height 
 	float vScale = 1.f;
 
+	// How many measure to snap note movement to
+	// 0 = no snapping
+	int snappingLevel = 4;
+
 	float GetNoteAreaScreenHeight(Area screenArea);
     Vec ToScreenPos(GraphPos graphPos, Area screenArea);
 	GraphPos ToGraphPos(Vec screenPos, Area screenArea);
@@ -76,7 +86,11 @@ public:
 	void UpdateWithInput(Area screenArea, SDL_Event& e);
 
 	// Returns true if they could be moved, false if not
-	bool TryMoveSelectedNotes(int amountX, int amountY);
+	// ignoreOverlap: Don't call CheckFixNoteOverlap after moving
+	bool TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap = false);
+
+	void Serialize(ByteDataSteam& bytesOut);
+	bool Deserialize(ByteDataSteam::ReadIterator& bytesIn);
 
 	// Prevent memory leak
 	~NoteGraph() {

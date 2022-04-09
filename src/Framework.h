@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <list>
+#include <iomanip>
 
 // Remove need for std namespace scope for very common datatypes
 using std::vector;
