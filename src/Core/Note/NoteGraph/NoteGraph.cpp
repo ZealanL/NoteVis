@@ -164,10 +164,11 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		if (mouseButton == 1) {
 
 			if (down) {
-				// Reset mode info
-				modeInfo.selectedNoteLastMouseDown = false;
-				modeInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
-				modeInfo.startDragMousePos = g_MousePos;
+				// Reset mode drag info
+				modeInfo.dragInfo.selectedNoteLastMouseDown = false;
+				modeInfo.dragInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
+				modeInfo.dragInfo.startDragMousePos = g_MousePos;
+				modeInfo.dragInfo.startDragSelectedNote = NULL;
 			}
 
 			switch (currentMode) {
@@ -179,12 +180,12 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 					if (hoveredNote) {
 						selectedNotes.insert(hoveredNote);
-						modeInfo.selectedNoteLastMouseDown = true;
+						modeInfo.dragInfo.selectedNoteLastMouseDown = true;
 					}
 
 				} else {
 					if (hoveredNote) {
-						if (isShiftDown && IsNoteSelected(hoveredNote) && !modeInfo.selectedNoteLastMouseDown)
+						if (isShiftDown && IsNoteSelected(hoveredNote) && !modeInfo.dragInfo.selectedNoteLastMouseDown)
 							selectedNotes.erase(hoveredNote); // Deselect when holding shift
 					}
 
@@ -210,8 +211,8 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			if (isControlDown) {
 				// Start rect selection
 				currentMode = MODE_RECTSELECT;
-			} else if (modeInfo.selectedNoteLastMouseDown 
-				&& (g_MousePos.Distance(modeInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
+			} else if (modeInfo.dragInfo.selectedNoteLastMouseDown
+				&& (g_MousePos.Distance(modeInfo.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
 				// Standard selection
 				// Also possible drag
 				currentMode = MODE_DRAGNOTES;
@@ -219,7 +220,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 		// Update selected notes in rect
 		if (currentMode == MODE_RECTSELECT && mouseMoved) {
-			GraphPos a = modeInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
+			GraphPos a = modeInfo.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
 
 			NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
 			KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
@@ -236,8 +237,8 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 		if (currentMode == MODE_DRAGNOTES && mouseMoved) {
 			if (!selectedNotes.empty()) {
-				int timeDelta = mouseGraphPos.x - modeInfo.startDragPos.x;
-				int keyDelta = roundf(mouseGraphPos.y - modeInfo.startDragPos.y);
+				int timeDelta = mouseGraphPos.x - modeInfo.dragInfo.startDragPos.x;
+				int keyDelta = roundf(mouseGraphPos.y - modeInfo.dragInfo.startDragPos.y);
 
 				Note* first = *selectedNotes.begin();
 				NoteTime minTime = first->time;
@@ -254,8 +255,8 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
 
-					modeInfo.startDragPos.x += timeDelta;
-					modeInfo.startDragPos.y += keyDelta;
+					modeInfo.dragInfo.startDragPos.x += timeDelta;
+					modeInfo.dragInfo.startDragPos.y += keyDelta;
 				}
 			}
 
@@ -429,9 +430,9 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 
 		if (currentMode == NoteGraph::MODE_RECTSELECT) {
-			Vec start = ToScreenPos(modeInfo.startDragPos, screenArea);
+			Vec start = ToScreenPos(modeInfo.dragInfo.startDragPos, screenArea);
 
-			Area selectArea = { ToScreenPos(modeInfo.startDragPos, screenArea), g_MousePos };
+			Area selectArea = { ToScreenPos(modeInfo.dragInfo.startDragPos, screenArea), g_MousePos };
 			Draw::ORect(selectArea, COL_WHITE);
 		}
 	}

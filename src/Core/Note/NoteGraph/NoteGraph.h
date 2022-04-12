@@ -36,9 +36,13 @@ public:
 	int currentMode = MODE_IDLE;
 
 	struct NoteGraphModeInfo {
-		GraphPos startDragPos;
-		Vec startDragMousePos;
-		bool selectedNoteLastMouseDown = false;
+		struct {
+			Note* startDragSelectedNote;
+			GraphPos startDragPos;
+			Vec startDragMousePos;
+			bool selectedNoteLastMouseDown = false;
+		} dragInfo;
+		
 	};
 	NoteGraphModeInfo modeInfo;
 
