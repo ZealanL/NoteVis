@@ -37,6 +37,8 @@ public:
 
 	struct NoteGraphModeInfo {
 		GraphPos startDragPos;
+		Vec startDragMousePos;
+		bool selectedNoteLastMouseDown = false;
 	};
 	NoteGraphModeInfo modeInfo;
 
@@ -90,7 +92,7 @@ public:
 	bool TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap = false);
 
 	void Serialize(ByteDataSteam& bytesOut);
-	bool Deserialize(ByteDataSteam::ReadIterator& bytesIn);
+	void Deserialize(ByteDataSteam::ReadIterator& bytesIn);
 
 	// Prevent memory leak
 	~NoteGraph() {

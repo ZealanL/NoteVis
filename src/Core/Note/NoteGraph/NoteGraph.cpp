@@ -11,8 +11,8 @@ Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
 	int relativeTime = graphPos.x - hScroll;
 	float outX = (relativeTime / 1000.f) * hZoom;
 
-	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F /2.f)) / KEY_AMOUNT_SUB1_F) * GetNoteAreaScreenHeight(screenArea);
-return Vec(outX, outY) + screenArea.Center();
+	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * GetNoteAreaScreenHeight(screenArea);
+	return Vec(outX, outY) + screenArea.Center();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
@@ -103,10 +103,10 @@ void NoteGraph::ClearNotes() {
 	}
 
 	selectedNotes.clear();
-	
+
 	for (auto& slot : _noteSlots)
 		slot.clear();
-	
+
 	_notes.clear();
 
 	hoveredNote = NULL;
@@ -120,72 +120,13 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 	bool isLMouseDown = g_MouseState & SDL_BUTTON_LMASK;
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
 	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
-	
+
 	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, screenArea);
 	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
 
 	static GraphPos lastMouseGraphPos;
 	bool mouseMoved = mouseGraphPos != lastMouseGraphPos;
 	lastMouseGraphPos = mouseGraphPos;
-
-	bool isDragging = isLMouseDown && mouseMoved;
-
-	// Scroll graph
-	if (e.type == SDL_MOUSEWHEEL) {
-		hScroll += -e.wheel.y * (isShiftDown ? 5000 : 500);
-		hScroll = CLAMP(g_NoteGraph.hScroll, 0, g_NoteGraph.GetFurthestNoteEndTime());
-	}
-
-	// Mouse click
-	if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
-		bool down = e.type == SDL_MOUSEBUTTONDOWN;
-		int mouseButton = e.button.button;
-		if (mouseButton == 1) {
-			switch (currentMode) {
-			case MODE_IDLE:
-				if (down) {
-					modeInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
-				} else {
-					if (!isShiftDown) // Shift-click to keep selecting more notes
-						selectedNotes.clear();
-
-					for (Note* note : _noteSlots[mouseGraphKey]) {
-						if (note->time <= mouseGraphPos.x && note->time + note->duration >= mouseGraphPos.x) {
-
-							// Toggle selection when holding shift
-							if (!isShiftDown || !selectedNotes.erase(note)) {
-								selectedNotes.insert(note);
-							}
-
-							break;
-						}
-					}
-				}
-				break;
-
-			case MODE_RECTSELECT:
-			case MODE_DRAGNOTES:
-				// Stop selecting/dragging
-				currentMode = MODE_IDLE;
-
-				for (Note* selectedNote : selectedNotes)
-					CheckFixNoteOverlap(selectedNote);
-
-				break;
-			}
-		}
-	}
-
-	if (isDragging) {
-		if (isControlDown) {
-			// Start rect selection
-			currentMode = MODE_RECTSELECT;
-		} else {
-			// Standard selection
-			// Also possible drag
-			currentMode = MODE_DRAGNOTES;
-		}
-	}
 
 	{ // Update hoveredNote
 		if (currentMode == MODE_IDLE) {
@@ -210,220 +151,287 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 	}
 
-	if (currentMode == MODE_RECTSELECT && mouseMoved) {
-		{ // Update selected notes in rect
+	// Scroll graph
+	if (e.type == SDL_MOUSEWHEEL) {
+		hScroll += -e.wheel.y * (isShiftDown ? 5000 : 500);
+		hScroll = CLAMP(g_NoteGraph.hScroll, 0, g_NoteGraph.GetFurthestNoteEndTime());
+	}
+
+	// Mouse click
+	if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
+		bool down = e.type == SDL_MOUSEBUTTONDOWN;
+		int mouseButton = e.button.button;
+		if (mouseButton == 1) {
+
+			if (down) {
+				// Reset mode info
+				modeInfo.selectedNoteLastMouseDown = false;
+				modeInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
+				modeInfo.startDragMousePos = g_MousePos;
+			}
+
+			switch (currentMode) {
+			case MODE_IDLE:
+				if (down) {
+
+					if (!isShiftDown) // If not holding shift, deselect everything
+						selectedNotes.clear();
+
+					if (hoveredNote) {
+						selectedNotes.insert(hoveredNote);
+						modeInfo.selectedNoteLastMouseDown = true;
+					}
+
+				} else {
+					if (hoveredNote) {
+						if (isShiftDown && IsNoteSelected(hoveredNote) && !modeInfo.selectedNoteLastMouseDown)
+							selectedNotes.erase(hoveredNote); // Deselect when holding shift
+					}
+
+					break;
+				}
+
+			case MODE_RECTSELECT:
+			case MODE_DRAGNOTES:
+				// Stop selecting/dragging
+				currentMode = MODE_IDLE;
+
+				for (Note* selectedNote : selectedNotes)
+					CheckFixNoteOverlap(selectedNote);
+
+				break;
+				}
+			}
+		}
+
+		constexpr float MIN_MOUSE_DRAG_DIST_PX = 3.f;
+
+		if (isLMouseDown && mouseMoved) {
+			if (isControlDown) {
+				// Start rect selection
+				currentMode = MODE_RECTSELECT;
+			} else if (modeInfo.selectedNoteLastMouseDown 
+				&& (g_MousePos.Distance(modeInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
+				// Standard selection
+				// Also possible drag
+				currentMode = MODE_DRAGNOTES;
+			}
+		}
+		// Update selected notes in rect
+		if (currentMode == MODE_RECTSELECT && mouseMoved) {
 			GraphPos a = modeInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
 
 			NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
 			KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
 
-			selectedNotes.clear();
+			if (!isShiftDown)
+				selectedNotes.clear();
+
 			for (Note* note : *this) {
 				if (note->time + note->duration >= startTime && note->time <= endTime)
 					if (note->key >= startKey && note->key <= endKey)
-							selectedNotes.insert(note);
+						selectedNotes.insert(note);
 			}
+		}
+
+		if (currentMode == MODE_DRAGNOTES && mouseMoved) {
+			if (!selectedNotes.empty()) {
+				int timeDelta = mouseGraphPos.x - modeInfo.startDragPos.x;
+				int keyDelta = roundf(mouseGraphPos.y - modeInfo.startDragPos.y);
+
+				Note* first = *selectedNotes.begin();
+				NoteTime minTime = first->time;
+				KeyInt minKey = first->key, maxKey = first->key;
+				for (Note* note : selectedNotes) {
+					minKey = MIN(note->key, minKey);
+					maxKey = MAX(note->key, maxKey);
+					minTime = MIN(note->time, minTime);
+				}
+
+				// Limit move
+				keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
+				timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
+
+				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
+
+					modeInfo.startDragPos.x += timeDelta;
+					modeInfo.startDragPos.y += keyDelta;
+				}
+			}
+
 		}
 	}
 
-	if (currentMode == MODE_DRAGNOTES && mouseMoved) {
-		if (!selectedNotes.empty()) {
-			int timeDelta = mouseGraphPos.x - modeInfo.startDragPos.x;
-			int keyDelta = roundf(mouseGraphPos.y - modeInfo.startDragPos.y);
+	bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
+		// Check
+		for (Note* note : selectedNotes) {
+			if (note->time + amountX < 0)
+				return false; // Horizontal limit reached
 
-			Note* first = *selectedNotes.begin();
-			NoteTime minTime = first->time;
-			KeyInt minKey = first->key, maxKey = first->key;
-			for (Note* note : selectedNotes) {
-				minKey = MIN(note->key, minKey);
-				maxKey = MAX(note->key, maxKey);
-				minTime = MIN(note->time, minTime);
-			}
-
-			// Limit move
-			keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
-			timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
-
-			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
-
-				modeInfo.startDragPos.x += timeDelta;
-				modeInfo.startDragPos.y += keyDelta;
-			}
+			int testNewKey = note->key + amountY;
+			if (testNewKey < 0 || testNewKey >= KEY_AMOUNT)
+				return false; // Vertical limit reached
 		}
-		
-	}
-}
 
-bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
-	// Check
-	for (Note* note : selectedNotes) {
-		if (note->time + amountX < 0)
-			return false; // Horizontal limit reached
-
-		int testNewKey = note->key + amountY;
-		if (testNewKey < 0 || testNewKey >= KEY_AMOUNT)
-			return false; // Vertical limit reached
-	}
-
-	// Move
-	for (Note* note : selectedNotes)
-		MoveNote(note, note->time + amountX, note->key + amountY, true);
-
-	
-	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
-	if (!ignoreOverlap)
+		// Move
 		for (Note* note : selectedNotes)
-			CheckFixNoteOverlap(note);
+			MoveNote(note, note->time + amountX, note->key + amountY, true);
 
-	return true;
-}
 
-void NoteGraph::Serialize(ByteDataSteam& bytesOut) {
-	bytesOut.reserve(GetNoteCount() * sizeof(Note));
+		// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
+		if (!ignoreOverlap)
+			for (Note* note : selectedNotes)
+				CheckFixNoteOverlap(note);
 
-	for (Note* note : _notes) {
-		bytesOut.WriteAsBytes(note->key);
-		bytesOut.WriteAsBytes(note->time);
-		bytesOut.WriteAsBytes(note->duration);
-		bytesOut.WriteAsBytes(note->velocity);
+		return true;
 	}
 
-	DLOG("NoteGraph::Serialize(): Wrote {} notes", _notes.size());
-}
+	void NoteGraph::Serialize(ByteDataSteam & bytesOut) {
+		bytesOut.reserve(GetNoteCount() * sizeof(Note));
 
-bool NoteGraph::Deserialize(ByteDataSteam::ReadIterator& bytesIn) {
-	int notesRead;
-	for (notesRead = 0; bytesIn.BytesLeft() > sizeof(Note); notesRead++) {
-		Note note;
-		bytesIn.Read(&note.key);
-		bytesIn.Read(&note.time);
-		bytesIn.Read(&note.duration);
-		bytesIn.Read(&note.velocity);
-		AddNote(note);
-	}
-
-	DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
-}
-
-void NoteGraph::Render(Area screenArea) {
-	GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
-
-	KeyInt graphMouseKey = roundf(graphMousePos.y);
-	NoteTime graphMouseTime = graphMousePos.x;
-
-	float noteSize = floorf(GetNoteAreaScreenHeight(screenArea) / KEY_AMOUNT);
-
-	Draw::Rect(screenArea.min, screenArea.max, COL_BLACK);
-
-	float minDrawX = MAX(screenArea.min.x, ToScreenPos({ 0,0 }, screenArea).x);
-
-	// Horizontal slot lines
-	for (int i = 0; i < KEY_AMOUNT; i++) {
-		auto screenY = screenArea.min.y + ToScreenPos(GraphPos(0, i), screenArea).y;
-
-		Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(screenArea.max.x, screenY), Color(25, 25, 25));
-	}
-
-	// Vertical lines lines
-	for (int i = 0; i < 100; i++) {
-		float beat = i / 4.f;
-		NoteTime t = beat * NOTETIME_PER_BEAT;
-		bool isBeatLine = (beat == roundf(beat));
-		bool isMeasureLine = isBeatLine && ((int)beat % timeSig.num) == 0;
-
-		// More alpha = more important line
-		int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
-
-		auto screenX = screenArea.min.x + ToScreenPos(GraphPos(t, 0), screenArea).x;
-
-		Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y),
-			Color(255, 255, 255, alpha));
-	}
-
-	{ // Draw notes
-
-		// We need to draw notes in order of time, this will contain note pointers but sorted
-		vector<Note*> notesToDraw;
-
-		for (Note* note : *this) {
-			// TODO: Sub-optimal check requires function calls
-			Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
-			float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
-
-			if (screenPos.x > screenArea.max.x || tailEndX < screenArea.min.x)
-				continue;
-
-			notesToDraw.push_back(note);
+		for (Note* note : _notes) {
+			bytesOut.WriteAsBytes(note->key);
+			bytesOut.WriteAsBytes(note->time);
+			bytesOut.WriteAsBytes(note->duration);
+			bytesOut.WriteAsBytes(note->velocity);
 		}
 
-		// Lambda sorting by time
-		std::sort(notesToDraw.begin(), notesToDraw.end(),
-			[](const Note* a, const Note* b) -> bool {
-				return a->time < b->time;
-			}
-		);
+		DLOG("NoteGraph::Serialize(): Wrote {} notes (bytesOut size: {})", _notes.size(), bytesOut.size());
+	}
 
-		float noteHeadSize_half = floorf(noteSize / 2);
-		float noteHeadHollowSize_half = noteSize / 3;
-		float noteTailGap = MAX(1.f, roundf(noteSize / 6.f));
-
-		bool dimNonSelected;
-		switch (currentMode) {
-		case MODE_PLAY:
-			dimNonSelected = false;
-			break;
-		case MODE_RECTSELECT:
-			dimNonSelected = true;
-			break;
-		default:
-			dimNonSelected = !selectedNotes.empty();
+	void NoteGraph::Deserialize(ByteDataSteam::ReadIterator & bytesIn) {
+		int notesRead;
+		for (notesRead = 0; bytesIn.BytesLeft(); notesRead++) {
+			Note note;
+			bytesIn.Read(&note.key);
+			bytesIn.Read(&note.time);
+			bytesIn.Read(&note.duration);
+			bytesIn.Read(&note.velocity);
+			AddNote(note);
 		}
 
-		for (Note* note : notesToDraw) {
-			bool selected = IsNoteSelected(note);
+		DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
+	}
 
-			Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
-			float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+	void NoteGraph::Render(Area screenArea) {
+		GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
 
-			// Align pixel-perfect
-			screenPos = screenPos.Rounded();
+		KeyInt graphMouseKey = roundf(graphMousePos.y);
+		NoteTime graphMouseTime = graphMousePos.x;
 
-			Color col = NoteColors::GetKeyColor(note->key);
+		float noteSize = floorf(GetNoteAreaScreenHeight(screenArea) / KEY_AMOUNT);
 
-			Area headArea = { screenPos - noteHeadSize_half , screenPos + noteHeadSize_half };
-			Area tailArea = { screenPos - Vec(0, noteTailGap), Vec(tailEndX, screenPos.y + noteTailGap) };
-			if (selected) {
-				// White outline around black border
-				Draw::Rect(headArea.Expand(2), COL_WHITE);
-				Draw::Rect(tailArea.Expand(2), COL_WHITE);
+		Draw::Rect(screenArea.min, screenArea.max, COL_BLACK);
 
-			} else {
-				if (dimNonSelected)
-					col = col.RatioBrighten(0.35f);
+		float minDrawX = MAX(screenArea.min.x, ToScreenPos({ 0,0 }, screenArea).x);
+
+		// Horizontal slot lines
+		for (int i = 0; i < KEY_AMOUNT; i++) {
+			auto screenY = screenArea.min.y + ToScreenPos(GraphPos(0, i), screenArea).y;
+
+			Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(screenArea.max.x, screenY), Color(25, 25, 25));
+		}
+
+		// Vertical lines lines
+		for (int i = 0; i < 100; i++) {
+			float beat = i / 4.f;
+			NoteTime t = beat * NOTETIME_PER_BEAT;
+			bool isBeatLine = (beat == roundf(beat));
+			bool isMeasureLine = isBeatLine && ((int)beat % timeSig.num) == 0;
+
+			// More alpha = more important line
+			int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
+
+			auto screenX = screenArea.min.x + ToScreenPos(GraphPos(t, 0), screenArea).x;
+
+			Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y),
+				Color(255, 255, 255, alpha));
+		}
+
+		{ // Draw notes
+
+			// We need to draw notes in order of time, this will contain note pointers but sorted
+			vector<Note*> notesToDraw;
+
+			for (Note* note : *this) {
+				// TODO: Sub-optimal check requires function calls
+				Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
+				float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+
+				if (screenPos.x > screenArea.max.x || tailEndX < screenArea.min.x)
+					continue;
+
+				notesToDraw.push_back(note);
 			}
 
-			// Brighten hovered notes
-			if (hoveredNote == note)
-				col = col.RatioBrighten(1.5f);
+			// Lambda sorting by time
+			std::sort(notesToDraw.begin(), notesToDraw.end(),
+				[](const Note* a, const Note* b) -> bool {
+					return a->time < b->time;
+				}
+			);
 
-			// Black border for spacing
-			Draw::Rect(headArea.Expand(1), COL_BLACK);
-			Draw::Rect(tailArea.Expand(1), COL_BLACK);
+			float noteHeadSize_half = floorf(noteSize / 2);
+			float noteHeadHollowSize_half = noteSize / 3;
+			float noteTailGap = MAX(1.f, roundf(noteSize / 6.f));
 
-			// Draw note body
-			Draw::Rect(headArea, col);
-			Draw::Rect(tailArea, col);
+			bool dimNonSelected;
+			switch (currentMode) {
+			case MODE_PLAY:
+				dimNonSelected = false;
+				break;
+			case MODE_RECTSELECT:
+				dimNonSelected = true;
+				break;
+			default:
+				dimNonSelected = !selectedNotes.empty();
+			}
 
-			// Hollow note head if black key
-			if (note->IsBlackKey())
-				Draw::Rect(screenPos - noteHeadHollowSize_half, screenPos + noteHeadHollowSize_half, COL_BLACK);
+			for (Note* note : notesToDraw) {
+				bool selected = IsNoteSelected(note);
+
+				Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
+				float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+
+				// Align pixel-perfect
+				screenPos = screenPos.Rounded();
+
+				Color col = NoteColors::GetKeyColor(note->key);
+
+				Area headArea = { screenPos - noteHeadSize_half , screenPos + noteHeadSize_half };
+				Area tailArea = { screenPos - Vec(0, noteTailGap), Vec(tailEndX, screenPos.y + noteTailGap) };
+				if (selected) {
+					// White outline around black border
+					Draw::Rect(headArea.Expand(2), COL_WHITE);
+					Draw::Rect(tailArea.Expand(2), COL_WHITE);
+
+				} else {
+					if (dimNonSelected)
+						col = col.RatioBrighten(0.35f);
+				}
+
+				// Brighten hovered notes
+				if (hoveredNote == note)
+					col = col.RatioBrighten(1.5f);
+
+				// Black border for spacing
+				Draw::Rect(headArea.Expand(1), COL_BLACK);
+				Draw::Rect(tailArea.Expand(1), COL_BLACK);
+
+				// Draw note body
+				Draw::Rect(headArea, col);
+				Draw::Rect(tailArea, col);
+
+				// Hollow note head if black key
+				if (note->IsBlackKey())
+					Draw::Rect(screenPos - noteHeadHollowSize_half, screenPos + noteHeadHollowSize_half, COL_BLACK);
+			}
+		}
+
+		if (currentMode == NoteGraph::MODE_RECTSELECT) {
+			Vec start = ToScreenPos(modeInfo.startDragPos, screenArea);
+
+			Area selectArea = { ToScreenPos(modeInfo.startDragPos, screenArea), g_MousePos };
+			Draw::ORect(selectArea, COL_WHITE);
 		}
 	}
-
-	if (currentMode == NoteGraph::MODE_RECTSELECT) {
-		Vec start = ToScreenPos(modeInfo.startDragPos, screenArea);
-
-		Area selectArea = { ToScreenPos(modeInfo.startDragPos, screenArea), g_MousePos };
-		Draw::ORect(selectArea, COL_WHITE);
-	}
-}

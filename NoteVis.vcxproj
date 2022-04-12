@@ -205,6 +205,7 @@
     <ClInclude Include="src\Framework.h" />
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\Render\Renderer.h" />
+    <ClInclude Include="src\Types\ByteDataSteam.h" />
     <ClInclude Include="src\Types\Color.h" />
     <ClInclude Include="src\Types\Vec.h" />
   </ItemGroup>

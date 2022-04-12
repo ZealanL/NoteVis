@@ -4,7 +4,6 @@
 // Steam of bytes for serialization
 class ByteDataSteam : public vector<BYTE> {
 public:
-	
 	struct ReadIterator {
 		ByteDataSteam* stream;
 		int curIndex;
@@ -19,9 +18,18 @@ public:
 
 		template<typename T>
 		bool Read(T* out) {
-			return stream->ReadFromBytes(curIndex, out);
+			bool result = stream->ReadFromBytes(curIndex, out);
+			if (result)
+				curIndex += sizeof(T);
+			else 
+				curIndex = stream->size();
+			return result;
 		}
 	};
+
+	BYTE* GetBasePointer() {
+		return this->empty() ? NULL : this->begin()._Ptr;
+	}
 
 	template <typename T>
 	void WriteAsBytes(T object) {
@@ -34,12 +42,28 @@ public:
 		if (index + sizeof(T) >= this->size())
 			return false;
 
-		memcpy(out, this->begin()._Ptr + index, sizeof(T));
+		memcpy(out, GetBasePointer() + index, sizeof(T));
 		return true;
 	}
 
 	ReadIterator GetIterator() {
 		return ReadIterator(this);
+	}
+
+	void ReadFromFileStream(std::ifstream& streamIn) {
+		streamIn.seekg(0, streamIn.end);
+		size_t fileSize = streamIn.tellg();
+		streamIn.seekg(0, streamIn.beg);
+
+		if (fileSize > 0) {
+			this->resize(fileSize);
+			streamIn.read((char*)GetBasePointer(), fileSize);
+		}
+	}
+
+	void WriteToFileStream(std::ofstream& streamOut) {
+		if (!this->empty())
+			streamOut.write((char*)GetBasePointer(), this->size());
 	}
 };
 
