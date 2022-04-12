@@ -68,9 +68,8 @@ public:
 	// Vertical scale/zoom, how high the full notegraph is relative to screen height 
 	float vScale = 1.f;
 
-	// How many measure to snap note movement to
-	// 0 = no snapping
-	int snappingLevel = 4;
+	// Time step to snap to
+	int snappingTime = NOTETIME_PER_BEAT / 4;
 
 	float GetNoteAreaScreenHeight(Area screenArea);
     Vec ToScreenPos(GraphPos graphPos, Area screenArea);

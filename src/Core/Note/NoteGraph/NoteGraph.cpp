@@ -181,6 +181,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 					if (hoveredNote) {
 						selectedNotes.insert(hoveredNote);
 						modeInfo.dragInfo.selectedNoteLastMouseDown = true;
+						modeInfo.dragInfo.startDragSelectedNote = hoveredNote;
 					}
 
 				} else {
@@ -241,17 +242,34 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 				int keyDelta = roundf(mouseGraphPos.y - modeInfo.dragInfo.startDragPos.y);
 
 				Note* first = *selectedNotes.begin();
+				Note* earliestNote = first;
 				NoteTime minTime = first->time;
 				KeyInt minKey = first->key, maxKey = first->key;
 				for (Note* note : selectedNotes) {
 					minKey = MIN(note->key, minKey);
 					maxKey = MAX(note->key, maxKey);
-					minTime = MIN(note->time, minTime);
+
+					if (note->time < minTime) {
+						earliestNote = note;
+						minTime = note->time;
+					}
 				}
 
 				// Limit move
 				keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
 				timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
+
+				if (snappingTime > 1) {
+					// This will be the positional basis for our snapping
+					Note* baseNoteForSnap = modeInfo.dragInfo.startDragSelectedNote;
+
+					// If dragInfo.startDragSelectedNote wasn't set, just use the earliest selected note
+					if (!baseNoteForSnap)
+						baseNoteForSnap = earliestNote;
+
+					NoteTime unsnappedMoveTime = baseNoteForSnap->time + timeDelta;
+					timeDelta -= ((unsnappedMoveTime + (snappingTime/2)) % snappingTime) - (snappingTime/2);
+				}
 
 				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
 
