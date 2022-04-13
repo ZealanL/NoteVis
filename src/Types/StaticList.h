@@ -14,10 +14,9 @@ public:
 	const int& size = _size;
 
 	StaticList(const T* begin, int size) {
-		_data = (T*)malloc(size * sizeof(T));
 		_size = size;
+		_data = (T*)malloc(size * sizeof(T));
 		memcpy(_data, begin, GetDataAllocSize());
-		DLOG("Set size to {}", this->size);
 	}
 
 	StaticList(std::initializer_list<T> data) : StaticList(data.begin(), data.size()) {}
