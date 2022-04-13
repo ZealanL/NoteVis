@@ -177,6 +177,7 @@
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\Core\Core.cpp" />
+    <ClCompile Include="src\Core\Menu\Dialog.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.cpp" />
     <ClCompile Include="src\Render\Draw\Draw.cpp" />
@@ -196,6 +197,7 @@
     <ClInclude Include="src\Core\Action\Action.h" />
     <ClInclude Include="src\Core\Action\ActionDefines.h" />
     <ClInclude Include="src\Core\Core.h" />
+    <ClInclude Include="src\Core\Menu\Dialog.h" />
     <ClInclude Include="src\Core\Note\MusicTheoryDef.h" />
     <ClInclude Include="src\Core\Note\NoteColors.h" />
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGraph.h" />
@@ -207,6 +209,7 @@
     <ClInclude Include="src\Render\Renderer.h" />
     <ClInclude Include="src\Types\ByteDataSteam.h" />
     <ClInclude Include="src\Types\Color.h" />
+    <ClInclude Include="src\Types\StaticList.h" />
     <ClInclude Include="src\Types\Vec.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
