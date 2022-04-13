@@ -13,4 +13,10 @@ namespace Core {
 	void OnUserExit();
 
 	void ProcessEvent(SDL_Event& e);
+
+	// Add the g_NoteGraph's state to g_NoteGraphHistory
+	void NoteGraphHistoryUpdate();
+
+	// Restore (and pop) last state from g_NoteGraphHistory to g_NoteGraph
+	void NoteGraphHistoryRestore();
 }

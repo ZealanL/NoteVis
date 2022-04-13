@@ -11,10 +11,14 @@ void RunMainLoop() {
 		while (SDL_PollEvent(&event)) {
 			g_KeyboardState = SDL_GetKeyboardState(NULL);
 			Core::ProcessEvent(event);
+			ImGui_ImplSDL2_ProcessEvent(&event);
 		}
 
 		Renderer::BeginFrame();
+
 		Core::OnRender();
+		UI::OnRender();
+
 		Renderer::EndFrame();
 	}
 }

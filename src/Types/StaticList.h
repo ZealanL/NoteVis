@@ -7,11 +7,16 @@
 template <typename T>
 struct StaticList {
 private:
-	T* _data = NULL;
-	int _size = 0;
+	T* _data;
+	int _size;
 public:
 
 	const int& size = _size;
+
+	StaticList() {
+		_size = 0;
+		_data = NULL;
+	}
 
 	StaticList(const T* begin, int size) {
 		_size = size;

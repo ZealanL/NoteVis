@@ -1,5 +1,7 @@
 #include "UI.h"
 
+#include "../../Globals.h"
+
 void UI::InitImGuiTheme() {
 	auto& s = ImGui::GetStyle();
 
@@ -80,4 +82,31 @@ void UI::InitImGuiTheme() {
 		c[ImGuiCol_NavWindowingDimBg] = 	ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 		c[ImGuiCol_ModalWindowDimBg] = 		ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 	}
+}
+
+// Semi-global var
+stack<Dialog> currentDialogs;
+
+void UI::SetDialog(const Dialog& dialog) {
+	currentDialogs.push(dialog);
+}
+
+void UI::OnRender() {
+	if (!currentDialogs.empty()) {
+		auto& currentDialog = currentDialogs.top();
+
+		int choice = currentDialog.RenderGetResult();
+
+		if (choice != Dialog::CHOICE_INVALID) {
+			auto itr = currentDialog.executeOnChoiceFuncs.find(choice);
+			if (itr != currentDialog.executeOnChoiceFuncs.end())
+				itr->second();
+
+			currentDialogs.pop();
+		}
+	}
+}
+
+bool UI::PreventInput() {
+	return !currentDialogs.empty();
 }

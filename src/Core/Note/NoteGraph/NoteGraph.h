@@ -98,11 +98,9 @@ public:
 	void Serialize(ByteDataSteam& bytesOut);
 	void Deserialize(ByteDataSteam::ReadIterator& bytesIn);
 
-	// Prevent memory leak
 	~NoteGraph() {
-		for (Note* note : _notes) {
+		for (Note* note : _notes)
 			delete note;
-		}
 	}
 
 	// For C++ iterator

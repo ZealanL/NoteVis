@@ -33,6 +33,7 @@ using std::unordered_map;
 using std::set;
 using std::unordered_set;
 using std::list;
+using std::stack;
 using std::string;
 using std::pair;
 #pragma endregion

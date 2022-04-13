@@ -6,9 +6,13 @@
 #include "Core/Action/Action.h"
 #include "Core/Note/NoteGraph/NoteGraph.h"
 
+#include "Core/UI/Dialog/Dialog.h"
+
 // Should not include anything aside from framework and the types it stores
 
-#define GBLVAR(type, name) inline type g_##name = {};
+#define GBLVAR(type, name)			inline type g_##name = {};
+#define GBLVAR_V(type, name, value) inline type g_##name = value;
+
 #pragma region Global Variables
 
 GBLVAR(SDL_Renderer*,	SDL_Renderer);
@@ -19,6 +23,8 @@ GBLVAR(Vec, MousePos);
 GBLVAR(vector<Action>,	Actions);
 
 GBLVAR(NoteGraph, NoteGraph);
+GBLVAR(stack<NoteGraph>, NoteGraphHistory);
+
 GBLVAR(const BYTE*, KeyboardState);
 GBLVAR(uint32, MouseState);
 

@@ -13,8 +13,11 @@ int Dialog::RenderGetResult() {
 
 	ImGui::Text(message.c_str());
 
+	int choice = CHOICE_INVALID;
 	for (int i = 0; i < options.size; i++) {
-		ImGui::Button(options[i].c_str());
+		if (ImGui::Button(options[i].c_str())) {
+			choice = i;
+		}
 		if (i < options.size - 1) {
 			ImGui::SameLine();
 		}
@@ -22,5 +25,5 @@ int Dialog::RenderGetResult() {
 
 	ImGui::End();
 
-	return -1;
+	return choice;
 }
