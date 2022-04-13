@@ -62,6 +62,7 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes) {
 		// Invert
 		selected->key = highestKey - (selected->key - lowestKey);
+		g_NoteGraph.CheckFixNoteOverlap(selected);
 	}
 
 	DLOG("Inverted {} notes, key range: {}", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
