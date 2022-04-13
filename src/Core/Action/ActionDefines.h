@@ -73,54 +73,26 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 #pragma region Single step
 MAKE_ACTION(ShiftSelectedNotesUp, [] {
 
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		if (selected->key == KEY_AMOUNT - 1)
-			return; // Can't move any futher
-
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		selected->key++;
-
-	DLOG("Moved {} notes up", g_NoteGraph.selectedNotes.size());
+	g_NoteGraph.TryMoveSelectedNotes(0, 1);
 
 	}, Action::Keybind( SDLK_UP ));
 
 MAKE_ACTION(ShiftSelectedNotesDown, [] {
 
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		if (selected->key == 0)
-			return; // Can't move any futher
-
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		selected->key--;
-
-	DLOG("Moved {} notes down", g_NoteGraph.selectedNotes.size());
+	g_NoteGraph.TryMoveSelectedNotes(0, -1);
 
 	}, Action::Keybind( SDLK_DOWN ));
 #pragma endregion
 #pragma region Octave
 MAKE_ACTION(ShiftSelectedNotesUpOctave, [] {
 
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		if (selected->key >= KEY_AMOUNT - KEYS_PER_OCTAVE)
-			return; // Can't move any futher
-
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		selected->key += KEYS_PER_OCTAVE;
-
-	DLOG("Moved {} notes an octave up", g_NoteGraph.selectedNotes.size());
+	g_NoteGraph.TryMoveSelectedNotes(0, KEYS_PER_OCTAVE);
 
 	}, Action::Keybind( SDLK_UP, KBFLAG_CTRL ));
 
 MAKE_ACTION(ShiftSelectedNotesDownOctave, [] {
 
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		if (selected->key < KEYS_PER_OCTAVE)
-			return; // Can't move any futher
-
-	for (Note* selected : g_NoteGraph.selectedNotes)
-		selected->key -= KEYS_PER_OCTAVE;
-
-	DLOG("Moved {} notes an octave down", g_NoteGraph.selectedNotes.size());
+	g_NoteGraph.TryMoveSelectedNotes(0, -KEYS_PER_OCTAVE);
 
 	}, Action::Keybind( SDLK_DOWN, KBFLAG_CTRL ));
 #pragma endregion
