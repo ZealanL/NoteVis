@@ -1,5 +1,5 @@
 #pragma once
-#include "../../Core.h"
+#include "../../../Types/StaticList.h"
 
 struct Dialog {
 	string title, message;

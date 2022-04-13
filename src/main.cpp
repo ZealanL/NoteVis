@@ -1,6 +1,7 @@
 #include "Framework.h"
 #include "Core/Core.h"
 #include "Render/Renderer.h"
+#include "Core/UI/UI.h"
 
 // NOTE: Mostly from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_opengl3/main.cpp
 
@@ -30,8 +31,13 @@ int _main() {
 
 	DLOG("Starting " PROGRAM_NAME " " PROGRAM_VERSION);
 
+	// Initialize
 	Renderer::Init();
+	UI::InitImGuiTheme();
+
 	RunMainLoop();
+
+	// Shutdown
 	Renderer::Shutdown();
 
 	return EXITCODE_GOOD;
