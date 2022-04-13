@@ -5,10 +5,10 @@
 class ByteDataSteam : public vector<BYTE> {
 public:
 	struct ReadIterator {
-		ByteDataSteam* stream;
+		const ByteDataSteam* stream;
 		int curIndex;
 
-		ReadIterator(ByteDataSteam* stream) : stream(stream) {
+		ReadIterator(const ByteDataSteam* stream) : stream(stream) {
 			curIndex = 0;
 		}
 
@@ -27,7 +27,7 @@ public:
 		}
 	};
 
-	BYTE* GetBasePointer() {
+	BYTE* GetBasePointer() const {
 		return this->empty() ? NULL : this->begin()._Ptr;
 	}
 
@@ -36,17 +36,17 @@ public:
 		this->insert(this->end(), (BYTE*)&object, ((BYTE*)&object) + sizeof(T));
 	}
 
-	// Returns true if bytes were read, false if out of range
+	// Returns true if bytes were read, false if out of range (is negative-index proof)
 	template <typename T>
-	bool ReadFromBytes(int index, T* out) {
-		if (index + sizeof(T) >= this->size())
+	bool ReadFromBytes(int index, T* out) const {
+		if (index < 0 || index + sizeof(T) >= this->size())
 			return false;
 
 		memcpy(out, GetBasePointer() + index, sizeof(T));
 		return true;
 	}
 
-	ReadIterator GetIterator() {
+	ReadIterator GetIterator() const {
 		return ReadIterator(this);
 	}
 
@@ -61,9 +61,17 @@ public:
 		}
 	}
 
-	void WriteToFileStream(std::ofstream& streamOut) {
+	void WriteToFileStream(std::ofstream& streamOut) const {
 		if (!this->empty())
 			streamOut.write((char*)GetBasePointer(), this->size());
+	}
+
+	bool DataMatches(const ByteDataSteam& other) {
+		if (this->empty() || other.empty()) {
+			return this->empty() == other.empty();
+		} else {
+			return (this->size() == other.size()) && !memcmp(this->GetBasePointer(), other.GetBasePointer(), this->size());
+		}
 	}
 };
 

@@ -116,6 +116,10 @@ int NoteGraph::GetNoteCount() {
 	return _notes.size();
 }
 
+void NoteGraph::ClearEverything() {
+	ClearNotes();
+}
+
 void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 	bool isLMouseDown = g_MouseState & SDL_BUTTON_LMASK;
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];

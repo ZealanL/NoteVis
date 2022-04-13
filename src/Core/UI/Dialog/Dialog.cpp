@@ -15,12 +15,11 @@ int Dialog::RenderGetResult() {
 
 	int choice = CHOICE_INVALID;
 	for (int i = 0; i < options.size; i++) {
-		if (ImGui::Button(options[i].c_str())) {
+		if (ImGui::Button(options[i].c_str())) 
 			choice = i;
-		}
-		if (i < options.size - 1) {
+		
+		if (i < options.size - 1)
 			ImGui::SameLine();
-		}
 	}
 
 	ImGui::End();

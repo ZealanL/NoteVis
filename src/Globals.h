@@ -23,7 +23,6 @@ GBLVAR(Vec, MousePos);
 GBLVAR(vector<Action>,	Actions);
 
 GBLVAR(NoteGraph, NoteGraph);
-GBLVAR(stack<NoteGraph>, NoteGraphHistory);
 
 GBLVAR(const BYTE*, KeyboardState);
 GBLVAR(uint32, MouseState);

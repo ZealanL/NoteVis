@@ -14,9 +14,10 @@ namespace Core {
 
 	void ProcessEvent(SDL_Event& e);
 
-	// Add the g_NoteGraph's state to g_NoteGraphHistory
-	void NoteGraphHistoryUpdate();
+	// Add the g_NoteGraph's serialize data to g_NoteGraphHistory
+	void UpdateHistory();
 
-	// Restore (and pop) last state from g_NoteGraphHistory to g_NoteGraph
-	void NoteGraphHistoryRestore();
+	// Restore (and pop) last serialized data from g_NoteGraphHistory to g_NoteGraph
+	// Returns true if history was restored, false if no history
+	bool UndoRestoreHistory();
 }

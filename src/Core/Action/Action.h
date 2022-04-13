@@ -33,11 +33,13 @@ public:
 
 	string name;
 	Keybind bind;
+	bool undoable; // Can this action be undo'd
 
-	Action(string name, std::function<void()> fnOnExecute, Keybind bind) {
+	Action(string name, std::function<void()> fnOnExecute, Keybind bind, bool undoable) {
 		this->name = name;
 		this->fnOnExecute = fnOnExecute;
 		this->bind = bind;
+		this->undoable = undoable;
 	}
 
 	void Execute() {

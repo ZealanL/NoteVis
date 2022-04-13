@@ -83,6 +83,7 @@ public:
 	void MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap = false);
 
 	int GetNoteCount();
+	void ClearEverything();
 	const set<Note*>& GetNotes() { return _notes; }
 	Note* AddNote(Note note); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
