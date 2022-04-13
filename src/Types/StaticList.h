@@ -11,18 +11,17 @@ private:
 	int _size = 0;
 public:
 
-	StaticList(const StaticList& other) {
-		StaticList(other._data, other._size);
-	}
+	const int& size = _size;
 
 	StaticList(const T* begin, int size) {
 		_data = (T*)malloc(size * sizeof(T));
+		_size = size;
 		memcpy(_data, begin, GetDataAllocSize());
+		DLOG("Set size to {}", this->size);
 	}
 
-	StaticList(std::initializer_list<T> data) {
-		StaticList(data.begin(), data.size());
-	}
+	StaticList(std::initializer_list<T> data) : StaticList(data.begin(), data.size()) {}
+	StaticList(const StaticList& other) : StaticList(other._data, other._size) {}
 
 	T& operator[](int index) {
 		IASSERT(index, _size);
@@ -34,13 +33,10 @@ public:
 		return _data[index];
 	}
 
-	int GetSize() const {
-		return _size;
-	}
 
-	// GetSize() * sizeof(T)
+	// size * sizeof(T)
 	int GetDataAllocSize() const {
-		return GetSize() * sizeof(T);
+		return _size * sizeof(T);
 	}
 
 	bool IsEmpty() const {
@@ -51,4 +47,8 @@ public:
 		if (_data)
 			free(_data);
 	}
+
+	// For C++ iterator
+	T* begin() const { return IsEmpty() ? NULL : _data; }
+	T* end() const { return IsEmpty() ? NULL : _data + GetDataAllocSize(); }
 };
