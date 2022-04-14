@@ -61,11 +61,13 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 		DLOG("Failed to invert selected notes (no keys selected?)");
 	}
 
-	for (Note* selected : g_NoteGraph.selectedNotes) {
-		// Invert
-		selected->key = highestKey - (selected->key - lowestKey);
+	// Invert
+	for (Note* selected : g_NoteGraph.selectedNotes)
+		g_NoteGraph.MoveNote(selected, selected->time, highestKey - (selected->key - lowestKey), true);
+
+	// Check overlap
+	for (Note* selected : g_NoteGraph.selectedNotes)
 		g_NoteGraph.CheckFixNoteOverlap(selected);
-	}
 
 	DLOG("Inverted {} notes, key range: {}", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
 
