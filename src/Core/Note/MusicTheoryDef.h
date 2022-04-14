@@ -22,7 +22,7 @@ typedef int32 NoteTime;
 typedef uint8 KeyInt;
 
 // Note velocity, from 0 to 255
-typedef uint8 NoteVelInt;
+typedef uint8 VelInt;
 
 ENUM_SCOPE(KeyIndex,
 	C, Cs, Db = Cs, D, Ds, Eb = Ds, E, F, Fs, Gb = Fs, G, Gs, Ab = Gs, A, As, Bb = As, B,
