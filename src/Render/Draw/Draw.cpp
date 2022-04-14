@@ -58,7 +58,7 @@ void Draw::Text(string str, Vec pos, Color color, Vec center) {
 	if (!str.empty()) {
 		float size = ImGui::GetFontSize();
 		auto font = ImGui::GetFont();
-		Vec realPos = pos + center * font->CalcTextSizeA(size, FLT_MAX, 0, str.c_str());
+		Vec realPos = pos - center * font->CalcTextSizeA(size, FLT_MAX, 0, str.c_str());
 		DL->AddText(font, size, IMV(realPos), IMC(color), str.c_str());
 	}
 }
