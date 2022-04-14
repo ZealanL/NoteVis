@@ -11,7 +11,7 @@ void RunMainLoop() {
 		// Update keyboard/mouse state prior to any event parsing
 		// This is so that changes to keyboard/mouse state do not preceed the processing of their corresponding events
 		//	(i.e. g_MouseState[x] won't be set to true before SDL_MOUSEBUTTONDOWN is processed)
-		// TODO: SDL already has a way to do this (SDL_PumpEvents ?), implement that
+		// TODO: SDL already has a way to do this (SDL_PumpEvents ?), implement that maybe?
 		memcpy(g_KeyboardState, SDL_GetKeyboardState(NULL), sizeof(g_KeyboardState));
 		auto mouseStateInt = SDL_GetMouseState(NULL, NULL);
 		for (int i = 0; i < sizeof(g_MouseState); i++)

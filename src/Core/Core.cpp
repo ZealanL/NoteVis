@@ -82,9 +82,21 @@ void Core::ProcessEvent(SDL_Event& e) {
 	g_NoteGraph.UpdateWithInput(GetNoteGraphScreenArea(), e);
 }
 
+#pragma region Undo History
 deque<ByteDataStream> noteGraphHistory;
 
 void Core::UpdateHistory() {
+	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
+	constexpr double MIN_HISTORY_UPDATE_DELAY = 3;
+
+	static double lastUpdateTime = 0;
+	if (CURRENT_TIME >= lastUpdateTime + MIN_HISTORY_UPDATE_DELAY) {
+		lastUpdateTime = CURRENT_TIME;
+	} else {
+		// Hasn't been long enough
+		return;
+	}
+
 	ByteDataStream data;
 	g_NoteGraph.Serialize(data);
 
@@ -132,3 +144,4 @@ bool Core::UndoRestoreHistory() {
 		return false;
 	}
 }
+#pragma endregion

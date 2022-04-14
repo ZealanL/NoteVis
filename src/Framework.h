@@ -120,3 +120,5 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 
 // For scoped enums that shouldn't be classes
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
+
+#define CURRENT_TIME (ImGui::GetTime())
