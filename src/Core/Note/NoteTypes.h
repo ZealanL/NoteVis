@@ -28,8 +28,9 @@ struct Note {
 
 	bool IsValid() const {
 		return 
-			(key < KEY_AMOUNT) // Key is not out-of-bounds (that would be very bad)
-			&& time >= 0; // Note time is valid
+			(key < KEY_AMOUNT)	// Key is not out-of-bounds (that would be very bad)
+			&& velocity > 0		// Velocity is valid
+			&& time >= 0;		// Note time is valid
 	}
 };
 #pragma endregion

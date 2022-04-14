@@ -35,7 +35,9 @@ bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseD
 
 				if (type == message_type::NOTE_ON || type == message_type::NOTE_OFF) {
 					KeyInt key = event.m.bytes[1] - KEYS_PER_OCTAVE; // MIDI is an octave above us
-					VelInt vel = event.m.bytes[2];
+
+					int midiVel = event.m.bytes[2];
+					VelInt vel = MIN(midiVel * 2, 255); // MIDI vel only goes to 127
 
 					if (key >= BUILDCACHE_SIZE) {
 						outOfRangeNotes++;
