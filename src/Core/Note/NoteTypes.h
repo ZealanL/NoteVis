@@ -7,7 +7,6 @@
 #include "MusicTheoryDef.h"
 
 #pragma region Note
-
 struct Note {
 	KeyInt key;
 	NoteTime time, duration;

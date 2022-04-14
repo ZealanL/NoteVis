@@ -317,6 +317,8 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			bytesOut.WriteAsBytes(note->time);
 			bytesOut.WriteAsBytes(note->duration);
 			bytesOut.WriteAsBytes(note->velocity);
+
+			bytesOut.WriteAsBytes(IsNoteSelected(note));
 		}
 
 		DLOG("NoteGraph::Serialize(): Wrote {} notes (bytesOut size: {})", _notes.size(), bytesOut.size());
@@ -325,12 +327,17 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 	void NoteGraph::Deserialize(ByteDataSteam::ReadIterator & bytesIn) {
 		int notesRead;
 		for (notesRead = 0; bytesIn.BytesLeft(); notesRead++) {
-			Note note;
-			bytesIn.Read(&note.key);
-			bytesIn.Read(&note.time);
-			bytesIn.Read(&note.duration);
-			bytesIn.Read(&note.velocity);
-			AddNote(note);
+			Note newNote;
+			bytesIn.Read(&newNote.key);
+			bytesIn.Read(&newNote.time);
+			bytesIn.Read(&newNote.duration);
+			bytesIn.Read(&newNote.velocity);
+			Note* note = AddNote(newNote);
+
+			bool selected;
+			bytesIn.Read(&selected);
+			if (selected)
+				selectedNotes.insert(note);
 		}
 
 		DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
