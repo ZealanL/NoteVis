@@ -24,8 +24,8 @@ GBLVAR(vector<Action>,	Actions);
 
 GBLVAR(NoteGraph, NoteGraph);
 
-GBLVAR(const BYTE*, KeyboardState);
-GBLVAR(uint32, MouseState);
+GBLVAR(bool, KeyboardState[SDL_NUM_SCANCODES], {});
+GBLVAR(bool, MouseState[6], {});
 
 #pragma endregion
 #undef GBLVAR

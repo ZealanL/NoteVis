@@ -36,7 +36,9 @@ public:
 	};
 	int currentMode = MODE_IDLE;
 
-	struct NoteGraphModeInfo {
+	struct NoteGraphInputState {
+		bool mouseDown = false;
+
 		struct {
 			Note* startDragSelectedNote;
 			GraphPos startDragPos;
@@ -45,7 +47,7 @@ public:
 		} dragInfo;
 		
 	};
-	NoteGraphModeInfo modeInfo;
+	NoteGraphInputState state;
 
 	NoteTime GetFurthestNoteEndTime() {
 		return _furthestNoteEndTime;

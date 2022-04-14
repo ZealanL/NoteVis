@@ -121,7 +121,7 @@ void NoteGraph::ClearEverything() {
 }
 
 void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
-	bool isLMouseDown = g_MouseState & SDL_BUTTON_LMASK;
+	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
 	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
 
@@ -131,6 +131,8 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 	static GraphPos lastMouseGraphPos;
 	bool mouseMoved = mouseGraphPos != lastMouseGraphPos;
 	lastMouseGraphPos = mouseGraphPos;
+
+	bool isDragging = isLMouseDown && mouseMoved;
 
 	{ // Update hoveredNote
 		if (currentMode == MODE_IDLE) {
@@ -169,28 +171,27 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 			if (down) {
 				// Reset mode drag info
-				modeInfo.dragInfo.selectedNoteLastMouseDown = false;
-				modeInfo.dragInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
-				modeInfo.dragInfo.startDragMousePos = g_MousePos;
-				modeInfo.dragInfo.startDragSelectedNote = NULL;
+				state.dragInfo.selectedNoteLastMouseDown = false;
+				state.dragInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
+				state.dragInfo.startDragMousePos = g_MousePos;
+				state.dragInfo.startDragSelectedNote = NULL;
 			}
 
 			switch (currentMode) {
 			case MODE_IDLE:
 				if (down) {
-
 					if (!isShiftDown) // If not holding shift, deselect everything
 						selectedNotes.clear();
 
-					if (hoveredNote) {
+					if (hoveredNote && !IsNoteSelected(hoveredNote)) {
 						selectedNotes.insert(hoveredNote);
-						modeInfo.dragInfo.selectedNoteLastMouseDown = true;
-						modeInfo.dragInfo.startDragSelectedNote = hoveredNote;
+						state.dragInfo.selectedNoteLastMouseDown = true;
+						state.dragInfo.startDragSelectedNote = hoveredNote;
 					}
 
 				} else {
 					if (hoveredNote) {
-						if (isShiftDown && IsNoteSelected(hoveredNote) && !modeInfo.dragInfo.selectedNoteLastMouseDown)
+						if (isShiftDown && IsNoteSelected(hoveredNote) && !state.dragInfo.selectedNoteLastMouseDown)
 							selectedNotes.erase(hoveredNote); // Deselect when holding shift
 					}
 
@@ -212,20 +213,21 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 		constexpr float MIN_MOUSE_DRAG_DIST_PX = 3.f;
 
-		if (isLMouseDown && mouseMoved) {
+		if (isDragging) {
 			if (isControlDown) {
 				// Start rect selection
 				currentMode = MODE_RECTSELECT;
-			} else if (modeInfo.dragInfo.selectedNoteLastMouseDown
-				&& (g_MousePos.Distance(modeInfo.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
+			} else if (state.dragInfo.selectedNoteLastMouseDown
+				&& (g_MousePos.Distance(state.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
 				// Standard selection
 				// Also possible drag
 				currentMode = MODE_DRAGNOTES;
 			}
 		}
+
 		// Update selected notes in rect
-		if (currentMode == MODE_RECTSELECT && mouseMoved) {
-			GraphPos a = modeInfo.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
+		if (currentMode == MODE_RECTSELECT) {
+			GraphPos a = state.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
 
 			NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
 			KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
@@ -240,10 +242,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			}
 		}
 
-		if (currentMode == MODE_DRAGNOTES && mouseMoved) {
+		if (currentMode == MODE_DRAGNOTES) {
 			if (!selectedNotes.empty()) {
-				int timeDelta = mouseGraphPos.x - modeInfo.dragInfo.startDragPos.x;
-				int keyDelta = roundf(mouseGraphPos.y - modeInfo.dragInfo.startDragPos.y);
+				int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
+				int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
 
 				Note* first = *selectedNotes.begin();
 				Note* earliestNote = first;
@@ -265,7 +267,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				if (snappingTime > 1) {
 					// This will be the positional basis for our snapping
-					Note* baseNoteForSnap = modeInfo.dragInfo.startDragSelectedNote;
+					Note* baseNoteForSnap = state.dragInfo.startDragSelectedNote;
 
 					// If dragInfo.startDragSelectedNote wasn't set, just use the earliest selected note
 					if (!baseNoteForSnap)
@@ -277,11 +279,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
 
-					modeInfo.dragInfo.startDragPos.x += timeDelta;
-					modeInfo.dragInfo.startDragPos.y += keyDelta;
+					state.dragInfo.startDragPos.x += timeDelta;
+					state.dragInfo.startDragPos.y += keyDelta;
 				}
 			}
-
 		}
 	}
 
@@ -372,19 +373,17 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		for (int i = MAX(0, graphViewStartTime); i <= graphViewEndTime; i += (NOTETIME_PER_BEAT / 4)) {
 			bool isBeatLine = i % NOTETIME_PER_BEAT == 0;
 			int beat = i / NOTETIME_PER_BEAT;
-			bool isMeasureLine = beat % timeSig.num == 0;
+			bool isMeasureLine = isBeatLine && beat % timeSig.num == 0;
 			int measure = beat / timeSig.num;
-
-			NoteTime t = beat * NOTETIME_PER_BEAT;
 
 			// More alpha = more important line
 			int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
 
-			auto screenX = ToScreenPos(GraphPos(t, 0), screenArea).x;
+			auto screenX = ToScreenPos(GraphPos(i, 0), screenArea).x;
 
 			Color color = Color(255, 255, 255, alpha);
 
-			Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y), color);
+			Draw::Line(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y), color);
 
 			// Measure numbers
 			if (isMeasureLine)
@@ -488,9 +487,9 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 
 		if (currentMode == NoteGraph::MODE_RECTSELECT) {
-			Vec start = ToScreenPos(modeInfo.dragInfo.startDragPos, screenArea);
+			Vec start = ToScreenPos(state.dragInfo.startDragPos, screenArea);
 
-			Area selectArea = { ToScreenPos(modeInfo.dragInfo.startDragPos, screenArea), g_MousePos };
+			Area selectArea = { ToScreenPos(state.dragInfo.startDragPos, screenArea), g_MousePos };
 			Draw::ORect(selectArea, COL_WHITE);
 		}
 	}

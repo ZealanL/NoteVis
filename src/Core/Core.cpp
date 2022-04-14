@@ -6,6 +6,7 @@
 #include "../Render/Renderer.h"
 #include "UI/Dialog/Dialog.h"
 #include "UI/UI.h"
+#include "MIDI/MIDI.h"
 
 auto GetNoteGraphScreenArea() {
 	return Area({ 0,0 }, Renderer::GetWindowSize());
@@ -58,15 +59,13 @@ void Core::ProcessEvent(SDL_Event& e) {
 		break;
 	}
 
-	g_MouseState = SDL_GetMouseState(NULL, NULL);
-
 	g_NoteGraph.UpdateWithInput(GetNoteGraphScreenArea(), e);
 }
 
-deque<ByteDataSteam> noteGraphHistory;
+deque<ByteDataStream> noteGraphHistory;
 
 void Core::UpdateHistory() {
-	ByteDataSteam data;
+	ByteDataStream data;
 	g_NoteGraph.Serialize(data);
 
 	if (!noteGraphHistory.empty()) {
