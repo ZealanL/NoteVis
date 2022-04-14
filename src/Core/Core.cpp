@@ -13,26 +13,6 @@ auto GetNoteGraphScreenArea() {
 }
 
 void Core::OnRender() {
-	// Test stuff
-	if (g_NoteGraph.GetNoteCount() == 0) {
-
-		std::ifstream midiDataIn("C:\\Users\\admin\\Downloads\\Solo_Violin_Caprice_No._24_in_A_Minor_-_N._Paganini_Op._1_No._24.mid", std::ios::binary);
-		assert(midiDataIn.good());
-		ByteDataStream inData;
-		inData.ReadFromFileStream(midiDataIn);
-
-		MIDIParseData parseData;
-		if (MIDI::ParseMidi(inData.GetIterator(), parseData)) {
-			DLOG("Notes read: {}", parseData.notes.size());
-		} else {
-			assert(false);
-		}
-		for (Note note : parseData.notes) {
-			g_NoteGraph.AddNote(note);
-		}
-	}
-
-
 	g_NoteGraph.Render(GetNoteGraphScreenArea());
 }
 
@@ -109,7 +89,7 @@ void Core::UpdateHistory() {
 
 	noteGraphHistory.push_front(data);
 
-	constexpr size_t MAX_HISTORY_SIZE = (1000 * 1000) * 4; // 4 megabytes
+	constexpr size_t MAX_HISTORY_SIZE = (1000 * 1000) * 100; // 100 mb
 
 	// NOTE: Could store this as a global variable and update it with any changes instead for efficiency, but this is cleaner and simpler
 	size_t totalHistorySize = 0;
