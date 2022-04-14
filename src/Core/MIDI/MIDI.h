@@ -3,7 +3,14 @@
 
 #include "../../Framework.h"
 #include "../../Types/ByteDataSteam.h"
+#include "../Note/NoteTypes.h"
+
+struct MIDIParseData {
+	vector<Note> notes;
+
+	// TODO: Tempo information, etc.
+};
 
 namespace MIDI {
-	libremidi::reader::parse_result ParseMidi(ByteDataStream::ReadIterator bytesIn);
+	bool ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut);
 }

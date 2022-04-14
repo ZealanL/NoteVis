@@ -1,1 +1,99 @@
 #include "MIDI.h"
+using namespace libremidi;
+
+bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut) {
+	reader midiReader = reader(true);
+
+	reader::parse_result result = midiReader.parse(bytesIn.stream->GetBasePointer() + bytesIn.curIndex, bytesIn.BytesLeft());
+	switch (result) {
+	case reader::incomplete:
+		DLOG("Failed to parse MIDI file (incomplete)");
+		return false;
+	case reader::invalid:
+		DLOG("Failed to parse MIDI file (invalid)");
+		return false;
+	}
+
+	// Keep track of how many times certain discrepencies occur in this MIDI file
+	// These aren't fatal and don't prevent further parsing, but are a bad sign
+	int outOfRangeNotes = 0, repeatedOnEvents = 0, 
+		repeatedOffEvents = 0, invalidNotes = 0, unClosedNotes = 0;
+
+	// Reference: https://github.com/jcelerier/libremidi/blob/master/tests/midifile_dump.cpp#L57
+	for (auto& track : midiReader.tracks) {
+
+		// As we walk through the MIDI events, keep track of what note are being build (started playing)
+		// first = is being built
+		// second = note we are building
+		constexpr int BUILDCACHE_SIZE = KEY_AMOUNT;
+		pair<bool, Note> noteBuildCache[BUILDCACHE_SIZE]{};
+
+		for (auto& event : track) {
+			if (!event.m.is_meta_event()) {
+				NoteTime time = event.tick * ((double)NOTETIME_PER_BEAT / (double)midiReader.ticksPerBeat);
+				message_type type = event.m.get_message_type();
+
+				if (type == message_type::NOTE_ON || type == message_type::NOTE_OFF) {
+					KeyInt key = event.m.bytes[1] - KEYS_PER_OCTAVE; // MIDI is an octave above us
+					VelInt vel = event.m.bytes[2];
+
+					if (key >= BUILDCACHE_SIZE) {
+						outOfRangeNotes++;
+						continue;
+					}
+
+					// NOTE: Some MIDIs use NOTE_ON events with a velocity of zero instead of NOTE_OFF events
+					bool on = type == message_type::NOTE_ON && vel > 0;
+
+					auto& cache = noteBuildCache[key];
+
+					if (on) {
+						if (cache.first)
+							repeatedOnEvents++;
+
+						cache.second.key = key;
+						cache.second.time = time;
+						cache.second.velocity = vel;
+						cache.first = true;
+					} else {
+						if (cache.first) {
+							cache.second.duration = time - cache.second.time;
+							if (cache.second.IsValid()) {
+								parseDataOut.notes.push_back(cache.second);
+							} else {
+								invalidNotes++;
+							}
+							cache.first = false;
+						} else {
+							repeatedOffEvents++;
+						}
+					}
+				}
+			}
+		}
+
+		for (auto& pair : noteBuildCache) {
+			if (pair.first)
+				unClosedNotes++;
+
+			// TODO: Should we not ignore unclosed notes? Unsure.
+		}
+	}
+
+	DLOG("Finished parsing MIDI, track count: {}, tick length: {}, notes parsed: {}", 
+		midiReader.tracks.size(), (int)midiReader.get_end_time(), parseDataOut.notes.size());
+
+	if (outOfRangeNotes)
+		DLOG("\t{} notes were out of range", outOfRangeNotes);
+	if (repeatedOnEvents)
+		DLOG("\t{} NOTE_ON events repeated", repeatedOnEvents);
+	if (repeatedOffEvents)
+		DLOG("\t{} NOTE_OFF events repeated", repeatedOffEvents);
+	if (invalidNotes)
+		DLOG("\t{} notes were invalid and disgarded", invalidNotes);
+	if (unClosedNotes)
+		DLOG("\t{} notes were unclosed at the end of the file", unClosedNotes);
+
+
+	return true;
+}

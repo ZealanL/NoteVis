@@ -10,7 +10,7 @@
 struct Note {
 	KeyInt key;
 	NoteTime time, duration;
-	NoteVelInt velocity;
+	VelInt velocity;
 
 	// Key index relative to our octave
 	KeyInt GetOctaveKey() const { return key % KEYS_PER_OCTAVE; }
