@@ -34,6 +34,9 @@ void RunMainLoop() {
 			case SDL_KEYUP:
 				g_KeyboardState[event.key.keysym.scancode] = false;
 			}
+
+			ImGui_ImplSDL2_ProcessEvent(&event);
+			Core::ProcessEvent(event);		
 		}
 
 		Renderer::BeginFrame();

@@ -13,6 +13,26 @@ auto GetNoteGraphScreenArea() {
 }
 
 void Core::OnRender() {
+	// Test stuff
+	if (g_NoteGraph.GetNoteCount() == 0) {
+
+		std::ifstream midiDataIn("C:\\Users\\admin\\Downloads\\Solo_Violin_Caprice_No._24_in_A_Minor_-_N._Paganini_Op._1_No._24.mid", std::ios::binary);
+		assert(midiDataIn.good());
+		ByteDataStream inData;
+		inData.ReadFromFileStream(midiDataIn);
+
+		MIDIParseData parseData;
+		if (MIDI::ParseMidi(inData.GetIterator(), parseData)) {
+			DLOG("Notes read: {}", parseData.notes.size());
+		} else {
+			assert(false);
+		}
+		for (Note note : parseData.notes) {
+			g_NoteGraph.AddNote(note);
+		}
+	}
+
+
 	g_NoteGraph.Render(GetNoteGraphScreenArea());
 }
 
