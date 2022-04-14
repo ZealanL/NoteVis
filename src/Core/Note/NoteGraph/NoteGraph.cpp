@@ -380,7 +380,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			// More alpha = more important line
 			int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
 
-			auto screenX = screenArea.min.x + ToScreenPos(GraphPos(t, 0), screenArea).x;
+			auto screenX = ToScreenPos(GraphPos(t, 0), screenArea).x;
 
 			Color color = Color(255, 255, 255, alpha);
 
@@ -396,10 +396,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			// We need to draw notes in order of time, this will contain note pointers but sorted
 			vector<Note*> notesToDraw;
 
+			// TODO: Sub-optimal check requires function calls
 			for (Note* note : *this) {
-				// TODO: Sub-optimal check requires function calls
-				Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
-				float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+				Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), screenArea);
+				float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
 
 				if (screenPos.x > screenArea.max.x || tailEndX < screenArea.min.x)
 					continue;
@@ -407,7 +407,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 				notesToDraw.push_back(note);
 			}
 
-			// Lambda sorting by time
+			// Sorting by time
 			std::sort(notesToDraw.begin(), notesToDraw.end(),
 				[](const Note* a, const Note* b) -> bool {
 					return a->time < b->time;
@@ -440,11 +440,20 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 				screenPos = screenPos.Rounded();
 
 				Color col = NoteColors::GetKeyColor(note->key);
+				Color tailCol = col;
+				
+				float velocityRatio = powf(note->velocity / 255.f, 0.5f);
+				float headScale = 0.6f + velocityRatio;
 
-				Area headArea = { screenPos - noteHeadSize_half , screenPos + noteHeadSize_half };
+				col.a =		155 + (velocityRatio * 100);
+				tailCol.a = 55 + (velocityRatio * 200);
+
+				Area headArea = { screenPos - noteHeadSize_half*headScale , screenPos + noteHeadSize_half*headScale };
 				Area tailArea = { screenPos - Vec(0, noteTailGap), Vec(tailEndX, screenPos.y + noteTailGap) };
+				tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
+
 				if (selected) {
-					// White outline around black border
+					// Selected notes are outlined with white
 					Draw::Rect(headArea.Expand(2), COL_WHITE);
 					Draw::Rect(tailArea.Expand(2), COL_WHITE);
 
@@ -463,7 +472,14 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				// Draw note body
 				Draw::Rect(headArea, col);
-				Draw::Rect(tailArea, col);
+				Draw::Rect(tailArea, tailCol);
+
+				// Really loud notes begin to have a halo around their head
+				constexpr int HALO_THRESHOLD = 100;
+				int haloWidth = (MAX(0, note->velocity - HALO_THRESHOLD) / (255.f - HALO_THRESHOLD)) * noteHeadSize_half;
+				if (haloWidth > 0) {
+					Draw::Rect(headArea.Expand(haloWidth), Color(col.r, col.g, col.b, 50));
+				}
 
 				// Hollow note head if black key
 				if (note->IsBlackKey())
