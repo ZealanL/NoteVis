@@ -2,13 +2,13 @@
 #include "../Framework.h"
 
 // Steam of bytes for serialization
-class ByteDataSteam : public vector<BYTE> {
+class ByteDataStream : public vector<BYTE> {
 public:
 	struct ReadIterator {
-		const ByteDataSteam* stream;
+		const ByteDataStream* stream;
 		int curIndex;
 
-		ReadIterator(const ByteDataSteam* stream) : stream(stream) {
+		ReadIterator(const ByteDataStream* stream) : stream(stream) {
 			curIndex = 0;
 		}
 
@@ -66,7 +66,7 @@ public:
 			streamOut.write((char*)GetBasePointer(), this->size());
 	}
 
-	bool DataMatches(const ByteDataSteam& other) {
+	bool DataMatches(const ByteDataStream& other) {
 		if (this->empty() || other.empty()) {
 			return this->empty() == other.empty();
 		} else {

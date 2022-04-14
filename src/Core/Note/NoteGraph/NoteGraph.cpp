@@ -309,7 +309,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		return true;
 	}
 
-	void NoteGraph::Serialize(ByteDataSteam & bytesOut) {
+	void NoteGraph::Serialize(ByteDataStream & bytesOut) {
 		bytesOut.reserve(GetNoteCount() * sizeof(Note));
 
 		for (Note* note : _notes) {
@@ -324,7 +324,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		DLOG("NoteGraph::Serialize(): Wrote {} notes (bytesOut size: {})", _notes.size(), bytesOut.size());
 	}
 
-	void NoteGraph::Deserialize(ByteDataSteam::ReadIterator & bytesIn) {
+	void NoteGraph::Deserialize(ByteDataStream::ReadIterator & bytesIn) {
 		int notesRead;
 		for (notesRead = 0; bytesIn.BytesLeft(); notesRead++) {
 			Note newNote;

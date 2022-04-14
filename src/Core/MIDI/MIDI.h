@@ -5,5 +5,5 @@
 #include "../../Types/ByteDataSteam.h"
 
 namespace MIDI {
-	libremidi::reader::parse_result ParseMidi(ByteDataSteam::ReadIterator bytesIn);
+	libremidi::reader::parse_result ParseMidi(ByteDataStream::ReadIterator bytesIn);
 }

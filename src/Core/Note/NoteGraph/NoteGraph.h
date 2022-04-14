@@ -96,8 +96,8 @@ public:
 	// ignoreOverlap: Don't call CheckFixNoteOverlap after moving
 	bool TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap = false);
 
-	void Serialize(ByteDataSteam& bytesOut);
-	void Deserialize(ByteDataSteam::ReadIterator& bytesIn);
+	void Serialize(ByteDataStream& bytesOut);
+	void Deserialize(ByteDataStream::ReadIterator& bytesIn);
 
 	~NoteGraph() {
 		for (Note* note : _notes)
