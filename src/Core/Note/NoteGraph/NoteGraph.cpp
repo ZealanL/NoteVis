@@ -349,6 +349,12 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		KeyInt graphMouseKey = roundf(graphMousePos.y);
 		NoteTime graphMouseTime = graphMousePos.x;
 
+		NoteTime graphViewStartTime =	ToGraphPos(screenArea.min, screenArea).x;
+		NoteTime graphViewEndTime =		ToGraphPos(screenArea.max, screenArea).x;
+
+		// Round start time down to nearest beat
+		graphViewStartTime = (graphViewStartTime / NOTETIME_PER_BEAT) * NOTETIME_PER_BEAT;
+
 		float noteSize = floorf(GetNoteAreaScreenHeight(screenArea) / KEY_AMOUNT);
 
 		Draw::Rect(screenArea.min, screenArea.max, COL_BLACK);
@@ -363,19 +369,26 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 
 		// Vertical lines lines
-		for (int i = 0; i < 100; i++) {
-			float beat = i / 4.f;
+		for (int i = MAX(0, graphViewStartTime); i <= graphViewEndTime; i += (NOTETIME_PER_BEAT / 4)) {
+			bool isBeatLine = i % NOTETIME_PER_BEAT == 0;
+			int beat = i / NOTETIME_PER_BEAT;
+			bool isMeasureLine = beat % timeSig.num == 0;
+			int measure = beat / timeSig.num;
+
 			NoteTime t = beat * NOTETIME_PER_BEAT;
-			bool isBeatLine = (beat == roundf(beat));
-			bool isMeasureLine = isBeatLine && ((int)beat % timeSig.num) == 0;
 
 			// More alpha = more important line
 			int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
 
 			auto screenX = screenArea.min.x + ToScreenPos(GraphPos(t, 0), screenArea).x;
 
-			Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y),
-				Color(255, 255, 255, alpha));
+			Color color = Color(255, 255, 255, alpha);
+
+			Draw::PixelPerfectLine(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y), color);
+
+			// Measure numbers
+			if (isMeasureLine)
+				Draw::Text(std::to_string(measure + 1), Vec(screenX, screenArea.min.y), color, { -0.5f, -0.25f });
 		}
 
 		{ // Draw notes
