@@ -112,8 +112,8 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define IASSERT(e, s) ASSERT(e >= 0 && e < s) // Index assert 
 
 // Quick max/min/clamp logic macros
-#define MAX(a, b) ((a > b) ? a : b)
-#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? b : a)
+#define MIN(a, b) ((a < b) ? b : a)
 #define MAX3(a, b, c) MAX(MAX(a, b), c)
 #define MIN3(a, b, c) MIN(MIN(a, b), c)
 #define CLAMP(v, min, max) MAX(min, MIN(v, max))
