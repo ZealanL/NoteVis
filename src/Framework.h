@@ -39,7 +39,7 @@ using std::string;
 using std::pair;
 #pragma endregion
 
-// SDL 2
+// SDL 2 + OpenGL
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -47,6 +47,10 @@ using std::pair;
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_impl_opengl3.h"
 #include "../imgui/imgui_impl_sdl.h"
+
+// libremidi
+#include "../libremidi/libremidi.hpp"
+#include "../libremidi/reader.hpp"
 
 // Integer typedefs
 typedef int8_t	int8;	typedef uint8_t	 uint8;
