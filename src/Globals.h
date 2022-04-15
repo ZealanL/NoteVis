@@ -15,6 +15,10 @@
 
 #pragma region Global Variables
 
+// COMMAND LINE ARGUMENT
+// Maximum undo history memory size, in megabytes
+GBLVAR_V(int, ARG_MaxHistoryMemSize, 100);
+
 GBLVAR(SDL_Renderer*,	SDL_Renderer);
 GBLVAR(SDL_Window*,		SDL_Window);
 GBLVAR(SDL_GLContext,	SDL_GLContext);

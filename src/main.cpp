@@ -48,7 +48,7 @@ void RunMainLoop() {
 	}
 }
 
-int _main() {
+int _main(vector<string> args) {
 #if defined(_DEBUG) and defined(PLAT_WINDOWS)
 	// In debug mode, attach a debug console
 	AllocConsole();
@@ -58,7 +58,31 @@ int _main() {
 	auto error = freopen_s(&outStreamFilePtr, "CONOUT$", "w", stdout);
 #endif
 
-	DLOG("Starting " PROGRAM_NAME " " PROGRAM_VERSION);
+	DLOG("Starting " PROGRAM_NAME " " PROGRAM_VERSION ", number of command line args: {}", args.size());
+	for (auto arg : args) {
+		size_t spacePos = arg.find(' ');
+		if (spacePos == string::npos)
+			spacePos = arg.size();
+
+		string argName = arg.substr(0, spacePos);
+		string argVal = arg.substr(spacePos);
+		if (argName == "-maxhistorymem") {
+			try {
+				int amount = std::stoi(argVal, NULL, NULL);
+				if (amount < 1 || amount > 8000)
+					throw std::exception();
+
+				g_ARG_MaxHistoryMemSize = amount;
+				DLOG("Set history memory limit to {}mb", amount);
+			} catch (std::exception& e) {
+				ERRORCLOSE("Arg \"maxhistorymem\" should have a number from 1 to 8000");
+			}
+
+			break;
+		}
+
+		ERROR("Unknown command line argument \"{}\"", arg);
+	}
 
 	// Initialize
 	Renderer::Init();
@@ -74,12 +98,27 @@ int _main() {
 
 #ifdef PLAT_WINDOWS
 #include <Windows.h>
+#include <shellapi.h>
 int WINAPI WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR     lpCmdLine,
 	int       nShowCmd
 ) {
-	return _main();
+	int argCount;
+	LPWSTR* argsPtr = CommandLineToArgvW(GetCommandLineW(), &argCount);
+
+	vector<string> args;
+	args.reserve(argCount);
+
+	// Parse command line arguments
+	// TODO: Make a clean system to do this
+	for (int i = 1; i < argCount; i++) {
+		wstring wArg = argsPtr[i];
+		string arg = string(wArg.begin(), wArg.end());
+		args.push_back(arg);
+	}
+
+	return _main(args);
 }
 #endif

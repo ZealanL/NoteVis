@@ -75,3 +75,11 @@ public:
 	}
 };
 
+// Stores the difference from one ByteDataSteam to the next 
+// TODO: Implement
+class ByteDataStreamDiff {
+public:
+	vector<pair<size_t, BYTE>> additions;
+	vector<size_t> removals;
+	vector<pair<size_t, BYTE>> changes;
+};

@@ -36,6 +36,7 @@ using std::list;
 using std::stack;
 using std::deque;
 using std::string;
+using std::wstring;
 using std::pair;
 #pragma endregion
 
@@ -94,9 +95,9 @@ typedef BYTE uint8_t;
 #ifdef PLAT_WINDOWS
 #include <windows.h>
 // Show an error
-#define ERROR(s) { MessageBoxA(0, ("ERROR: " + FMT(s)).c_str(), PROGRAM_NAME " Error", MB_ICONERROR); }
+#define ERROR(s, ...) { MessageBoxA(0, ("ERROR: " + FMT(s, ##__VA_ARGS__)).c_str(), PROGRAM_NAME " Error", MB_ICONERROR); }
 // Show an error and close
-#define ERRORCLOSE(s)  { MessageBoxA(0, ("ERROR: " + FMT(s) + "\n" PROGRAM_NAME " will now exit.").c_str(), PROGRAM_NAME " Critical Error", MB_ICONERROR); EXIT(EXITCODE_BAD); }
+#define ERRORCLOSE(s, ...)  { MessageBoxA(0, ("ERROR: " + FMT(s, ##__VA_ARGS__) + "\n" PROGRAM_NAME " will now exit.").c_str(), PROGRAM_NAME " Critical Error", MB_ICONERROR); EXIT(EXITCODE_BAD); }
 #endif
 
 #define MERGE_IDR_INNER(a, b) a##b
@@ -122,3 +123,10 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
 
 #define CURRENT_TIME (ImGui::GetTime())
+
+// Framework functions
+namespace FW {
+	string TimeDurationToString(double time);
+
+	size_t HashStr(string str);
+}
