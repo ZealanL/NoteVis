@@ -81,7 +81,7 @@ int _main(vector<string> args) {
 			break;
 		}
 
-		ERROR("Unknown command line argument \"{}\"", arg);
+		ERROR("Ignoring unknown command line argument \"{}\"", arg);
 	}
 
 	// Initialize
@@ -116,7 +116,13 @@ int WINAPI WinMain(
 	for (int i = 1; i < argCount; i++) {
 		wstring wArg = argsPtr[i];
 		string arg = string(wArg.begin(), wArg.end());
-		args.push_back(arg);
+
+		if (!args.empty() && args.back().front() == '-' && arg.front() != '-') {
+			// Last argument was prefixed by '-', this one isn't - it must be a subargument
+			args.back() += ' ' + arg;
+		} else {
+			args.push_back(arg);
+		}
 	}
 
 	return _main(args);
