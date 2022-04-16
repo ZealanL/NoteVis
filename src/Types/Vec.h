@@ -259,4 +259,9 @@ struct Area {
 
 		return newArea;
 	}
+
+	// Returns a copy with fixed min and max (if they are invalid)
+	Area FixedMinMax() {
+		return Area(min, max);
+	}
 };

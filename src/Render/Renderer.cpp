@@ -34,7 +34,6 @@ bool Renderer::Init() {
 	 // Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -43,6 +42,8 @@ bool Renderer::Init() {
 	ImGui_ImplSDL2_InitForOpenGL(g_SDL_Window, g_SDL_GLContext);
 	const char* glslVersion = "#version 130";
 	ImGui_ImplOpenGL3_Init(glslVersion);
+
+	ImGui::GetIO().Fonts->AddFontDefault(); // Make sure default font is loaded before any rendering
 }
 
 void Renderer::Shutdown() {

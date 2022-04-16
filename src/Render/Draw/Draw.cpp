@@ -49,16 +49,27 @@ void Draw::OPoly(vector<Vec> points, Color color, float thickness) {
 }
 
 Vec Draw::GetTextSize(string str) {
-	float size = ImGui::GetFontSize();
+	float fontSize = ImGui::GetFontSize();
 	auto font = ImGui::GetFont();
-	return Vec(font->CalcTextSizeA(size, FLT_MAX, 0, str.c_str()));
+
+	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str()));
 }
 
 void Draw::Text(string str, Vec pos, Color color, Vec center) {
 	if (!str.empty()) {
 		float size = ImGui::GetFontSize();
 		auto font = ImGui::GetFont();
-		Vec realPos = pos - center * font->CalcTextSizeA(size, FLT_MAX, 0, str.c_str());
+		Vec realPos = pos - center * GetTextSize(str);
 		DL->AddText(font, size, IMV(realPos), IMC(color), str.c_str());
 	}
+}
+
+void Draw::StartClip(Area area) {
+	Area fixed = area.FixedMinMax();
+	DL->PushClipRect(IMV(fixed.min), IMV(fixed.max));
+}
+
+void Draw::EndClip() {
+	ASSERT(DL->_ClipRectStack.size() > 1);
+	DL->PopClipRect();
 }
