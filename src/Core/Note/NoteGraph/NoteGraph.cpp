@@ -447,8 +447,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 				col.a =		155 + (velocityRatio * 100);
 				tailCol.a = 55 + (velocityRatio * 200);
 
-				Area headArea = { screenPos - noteHeadSize_half*headScale , screenPos + noteHeadSize_half*headScale };
-				Area tailArea = { screenPos - Vec(0, noteTailGap), Vec(tailEndX, screenPos.y + noteTailGap) };
+				Vec headCenterPos = screenPos + Vec(noteHeadSize_half * headScale, 0);
+
+				Area headArea = { headCenterPos - noteHeadSize_half*headScale, headCenterPos + noteHeadSize_half*headScale };
+				Area tailArea = { headCenterPos - Vec(0, noteTailGap), Vec(tailEndX, headCenterPos.y + noteTailGap) };
 				tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
 
 				if (selected) {
@@ -471,7 +473,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				// Draw note body
 				Draw::Rect(headArea, col);
-				Draw::Rect(tailArea, tailCol);
+
+				// In some cases, the tail might end before it starts, which means it's too short to be visible
+				if (tailArea.min.x < tailArea.max.x)
+					Draw::Rect(tailArea, tailCol);
 
 				// Really loud notes begin to have a halo around their head
 				constexpr int HALO_THRESHOLD = 100;
@@ -482,7 +487,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 				// Hollow note head if black key
 				if (note->IsBlackKey())
-					Draw::Rect(screenPos - noteHeadHollowSize_half, screenPos + noteHeadHollowSize_half, COL_BLACK);
+					Draw::Rect(headCenterPos - noteHeadHollowSize_half, headCenterPos + noteHeadHollowSize_half, COL_BLACK);
 			}
 		}
 
