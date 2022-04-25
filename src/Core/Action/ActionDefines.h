@@ -75,33 +75,46 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 
 
 #pragma region Moving notes
+
 #pragma region Single step
+MAKE_ACTION(ShiftSelectedNotesLeft, [] {
+	g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.snappingTime, 0);
+	}, Action::Keybind(SDLK_LEFT), true);
+
+MAKE_ACTION(ShiftSelectedNotesRight, [] {
+	g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.snappingTime, 0);
+	}, Action::Keybind(SDLK_RIGHT), true);
+
 MAKE_ACTION(ShiftSelectedNotesUp, [] {
-
 	g_NoteGraph.TryMoveSelectedNotes(0, 1);
-
 	}, Action::Keybind(SDLK_UP), true);
 
 MAKE_ACTION(ShiftSelectedNotesDown, [] {
-
 	g_NoteGraph.TryMoveSelectedNotes(0, -1);
-
 	}, Action::Keybind(SDLK_DOWN), true);
 
 #pragma endregion
+
 #pragma region Octave
 MAKE_ACTION(ShiftSelectedNotesUpOctave, [] {
-
 	g_NoteGraph.TryMoveSelectedNotes(0, KEYS_PER_OCTAVE);
-
 	}, Action::Keybind(SDLK_UP, KBFLAG_CTRL), true);
 
 MAKE_ACTION(ShiftSelectedNotesDownOctave, [] {
-
 	g_NoteGraph.TryMoveSelectedNotes(0, -KEYS_PER_OCTAVE);
-
 	}, Action::Keybind(SDLK_DOWN, KBFLAG_CTRL), true);
 #pragma endregion
+
+#pragma region Measure
+MAKE_ACTION(ShiftSelectedNotesLeftMeasure, [] {
+	g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.num * NOTETIME_PER_BEAT, 0);
+	}, Action::Keybind(SDLK_LEFT, KBFLAG_CTRL), true);
+
+MAKE_ACTION(ShiftSelectedNotesRightMeasure, [] {
+	g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.num * NOTETIME_PER_BEAT, 0);
+	}, Action::Keybind(SDLK_RIGHT, KBFLAG_CTRL), true);
+#pragma endregion
+
 #pragma endregion
 #pragma endregion
 
