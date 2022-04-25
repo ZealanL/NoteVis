@@ -208,7 +208,7 @@ struct Area {
 
 	// Area is expanded outwards by a certain amount (or shrunk if negative)
 	Area Expand(float amount) {
-		Vec expandVec = Vec(MIN(amount, Width() / 2), MIN(amount, Height() / 2));
+		Vec expandVec = Vec(MAX(amount, -Width() / 2), MAX(amount, -Height() / 2));
 		return Area(min - expandVec, max + expandVec);
 	}
 

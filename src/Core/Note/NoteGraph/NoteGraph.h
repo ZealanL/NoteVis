@@ -1,8 +1,7 @@
 #pragma once
 #include "../NoteTypes.h"
 #include "../../../Types/ByteDataSteam.h"
-
-
+#include "../../UI/LogNotif/LogNotif.h"
 
 struct GraphPos {
 	NoteTime x;
@@ -23,6 +22,9 @@ private:
 	// Keep track of what notes are in what key slot for fast comparisons
 	set<Note*> _noteSlots[KEY_AMOUNT];
 public:
+
+	LogNotifList logNotifs;
+
 	// Current mode
 	enum {
 		MODE_IDLE,

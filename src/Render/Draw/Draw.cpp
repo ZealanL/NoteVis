@@ -48,10 +48,10 @@ void Draw::OPoly(vector<Vec> points, Color color, float thickness) {
 		DL->AddPolyline((ImVec2*)points.begin()._Ptr, points.size(), IMC(color), ImDrawListFlags_AntiAliasedLines, thickness);
 }
 
-Vec Draw::GetTextSize(string str) {
+Vec Draw::GetTextSize(string str, float wrapWidth) {
 	float fontSize = ImGui::GetFontSize();
 	auto font = ImGui::GetFont();
-	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str()));
+	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, wrapWidth, str.c_str()));
 }
 
 void Draw::Text(string str, Vec pos, Color color, Vec center) {
@@ -61,6 +61,21 @@ void Draw::Text(string str, Vec pos, Color color, Vec center) {
 		Vec realPos = pos - center * GetTextSize(str);
 		DL->AddText(font, size, IMV(realPos), IMC(color), str.c_str());
 	}
+}
+
+void Draw::TextInArea(string str, Area wrapArea, Color color, bool centerInArea) {
+	float fontSize = ImGui::GetFontSize();
+	auto font = ImGui::GetFont();
+	
+	Vec startPos = wrapArea.TopLeft();
+	if (centerInArea) {
+		Vec size = font->CalcTextSizeA(fontSize, wrapArea.Width(), wrapArea.Width(), str.c_str());
+		startPos += size / 2;
+	}
+
+	ASSERT(!centerInArea); // Area centering is unimplemented
+
+	DL->AddText(font, fontSize, IMV(startPos), IMC(color), str.c_str());
 }
 
 void Draw::StartClip(Area area) {

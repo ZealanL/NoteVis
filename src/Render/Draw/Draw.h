@@ -20,9 +20,10 @@ namespace Draw {
 	void ConvexPoly(vector<Vec> points, Color color);
 	void OPoly(vector<Vec> points, Color color, float thickness = 1.f);
 
-	Vec GetTextSize(string str);
+	Vec GetTextSize(string str, float wrapWidth = 0);
 
 	void Text(string str, Vec pos, Color color = { 255, 255, 255 }, Vec center = { 0.5f, 0.5f });
+    void TextInArea(string str, Area wrapArea, Color color = { 255, 255, 255 }, bool centerInArea = false);
     void StartClip(Area area);
     void EndClip();
 }

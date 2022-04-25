@@ -606,4 +606,7 @@ void NoteGraph::Render(RenderContext* ctx) {
 	Draw::Rect(ctx->fullNoteGraphScreenArea, COL_BLACK);
 
 	RenderNotes(ctx);
+
+	float logNotifWidth = MIN(ctx->fullNoteGraphScreenArea.Width() / 2.f, 400.f);
+	logNotifs.DrawAndUpdate(ctx->fullNoteGraphScreenArea.TopRight() - Vec(logNotifWidth + 4, 4), logNotifWidth);
 }

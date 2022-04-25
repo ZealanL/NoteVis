@@ -184,6 +184,7 @@
     <ClCompile Include="src\Core\UI\Dialog\Dialog.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.cpp" />
+    <ClCompile Include="src\Core\UI\LogNotif\LogNotif.cpp" />
     <ClCompile Include="src\Core\UI\UI.cpp" />
     <ClCompile Include="src\Framework.cpp" />
     <ClCompile Include="src\Render\Draw\Draw.cpp" />
@@ -228,6 +229,7 @@
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGraph.h" />
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.h" />
     <ClInclude Include="src\Core\Note\NoteTypes.h" />
+    <ClInclude Include="src\Core\UI\LogNotif\LogNotif.h" />
     <ClInclude Include="src\Core\UI\UI.h" />
     <ClInclude Include="src\Render\Draw\Draw.h" />
     <ClInclude Include="src\Framework.h" />
