@@ -24,3 +24,21 @@ string FW::TimeDurationToString(double time) {
 size_t FW::HashStr(string str) {
 	return std::hash<string>()(str);
 }
+
+string FW::NumOrdinal(uint64 val) {
+	string out = std::to_string(val);
+
+	uint64 base100 = val % 100;
+	if (base100 <= 10 || base100 >= 20) {
+		switch (val % 10) {
+		case 1:
+			return out + "st";
+		case 2:
+			return out + "nd";
+		case 3:
+			return out + "rd";
+		}
+	} else {
+		return out + "th";
+	}
+}

@@ -8,12 +8,18 @@
 #include "UI/UI.h"
 #include "MIDI/MIDI.h"
 
-auto GetNoteGraphScreenArea() {
-	return Area({ 0,0 }, Renderer::GetWindowSize());
+NoteGraph::RenderContext GetNoteGraphRenderCtx() {
+	NoteGraph::RenderContext ctx;
+	ctx.fullNoteGraphScreenArea = Area(
+		0,
+		Renderer::GetWindowSize()
+	);
+	return ctx;
 }
 
 void Core::OnRender() {
-	g_NoteGraph.Render(GetNoteGraphScreenArea());
+	auto renderCtx = GetNoteGraphRenderCtx();
+	g_NoteGraph.Render(&renderCtx);
 }
 
 void Core::OnUserExit() {
@@ -43,14 +49,19 @@ void Core::ProcessEvent(SDL_Event& e) {
 		kbFlags |= KBFLAG_SHIFT * ((keyMods & KMOD_SHIFT) > 0);
 		kbFlags |= KBFLAG_ALT * ((keyMods & KMOD_ALT) > 0);
 
+		bool handledByAction = false;
 		for (auto& action : g_Actions) {
 			if (action.bind.key == pressedKey && action.bind.flags == kbFlags) {
 				if (action.undoable)
 					UpdateHistory();
 
 				action.Execute();
+				handledByAction = true;
 			}
 		}
+
+		if (!handledByAction)
+			g_NoteGraph.TryHandleSpecialKeyEvent(pressedKey, kbFlags);
 
 		break;
 	}
@@ -59,11 +70,20 @@ void Core::ProcessEvent(SDL_Event& e) {
 		break;
 	}
 
-	g_NoteGraph.UpdateWithInput(GetNoteGraphScreenArea(), e);
+	auto renderCtx = GetNoteGraphRenderCtx();
+	g_NoteGraph.UpdateWithInput(e, &renderCtx);
 }
 
 #pragma region Undo History
-deque<ByteDataStream> noteGraphHistory;
+struct HistoryState {
+	double time;
+	ByteDataStream graphData;
+
+	size_t GetSize() {
+		return graphData.size();
+	}
+};
+deque<HistoryState> historyStates;
 
 void Core::UpdateHistory() {
 	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
@@ -80,44 +100,70 @@ void Core::UpdateHistory() {
 	ByteDataStream data;
 	g_NoteGraph.Serialize(data);
 
-	if (!noteGraphHistory.empty()) {
-		if (noteGraphHistory.front().DataMatches(data)) {
+	if (!historyStates.empty()) {
+		if (historyStates.front().graphData.DataMatches(data)) {
 			// Prevent storing history when nothing actually changed
 			return;
 		}
 	}
 
-	noteGraphHistory.push_front(data);
+	historyStates.push_front(HistoryState(CURRENT_TIME, data));
 
-	constexpr size_t MAX_HISTORY_SIZE = (1000 * 1000) * 100; // 100 mb
+	size_t MAX_HISTORY_SIZE = (1000 * 1000) * g_ARG_MaxHistoryMemSize;
 
 	// NOTE: Could store this as a global variable and update it with any changes instead for efficiency, but this is cleaner and simpler
 	size_t totalHistorySize = 0;
-	for (auto history : noteGraphHistory)
-		totalHistorySize += history.size();
+	for (auto history : historyStates)
+		totalHistorySize += history.GetSize();
 
-	if (totalHistorySize > MAX_HISTORY_SIZE) {
-		DLOG("Undo history size of {}mb exceeds limit of {}mb, removing old history",
-			totalHistorySize / (1000.f * 1000.f),
-			MAX_HISTORY_SIZE / (1000.f * 1000.f)
+	bool firstLoop = true;
+	while (historyStates.size() > 1 && totalHistorySize > MAX_HISTORY_SIZE) {
+
+		if (firstLoop) {
+			DLOG("Undo history size of {}mb exceeds limit of {}mb, removing old history",
+				totalHistorySize / (1000.f * 1000.f),
+				MAX_HISTORY_SIZE / (1000.f * 1000.f)
+			);
+		}
+
+		firstLoop = false;
+
+		// Remove one history state - find best to remove based off of lowest delta time from next state
+		auto bestToRemove = historyStates.begin();
+		double lowestTimeDelta = DBL_MAX, lastTime = historyStates.begin()->time;
+		for (auto itr = std::next(historyStates.begin()); itr != historyStates.end(); itr++) {
+			auto& state = *itr;
+			
+			double timeDelta = abs(state.time - lastTime);
+			if (timeDelta < lowestTimeDelta) {
+				lowestTimeDelta = timeDelta;
+				bestToRemove = itr;
+			}
+
+			lastTime = state.time;
+		}
+
+		DLOG("\tRemoving history state from {} ago (had time delta of {})",
+			FW::TimeDurationToString(CURRENT_TIME - bestToRemove->time),
+			FW::TimeDurationToString(lowestTimeDelta)
 		);
 
-		auto& back = noteGraphHistory.back();
-		noteGraphHistory.pop_back();
+		totalHistorySize -= bestToRemove->GetSize();
+		historyStates.erase(bestToRemove);
 	}
 }
 
 bool Core::UndoRestoreHistory() {
-	if (!noteGraphHistory.empty()) {
-		auto& data = noteGraphHistory.front();
-		auto deserializeItr = data.GetIterator();
+	if (!historyStates.empty()) {
+		auto& data = historyStates.front();
+		auto deserializeItr = data.graphData.GetIterator();
 
 		g_NoteGraph.ClearEverything();
 		g_NoteGraph.Deserialize(deserializeItr);
 
-		DLOG("\tUndo restored {} serialized bytes", data.size());
+		DLOG("\tUndo restored {} serialized bytes", data.graphData.size());
 
-		noteGraphHistory.pop_front();
+		historyStates.pop_front();
 		return true;
 	} else {
 		DLOG("\tNothing left to undo.");

@@ -51,7 +51,6 @@ void Draw::OPoly(vector<Vec> points, Color color, float thickness) {
 Vec Draw::GetTextSize(string str) {
 	float fontSize = ImGui::GetFontSize();
 	auto font = ImGui::GetFont();
-
 	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str()));
 }
 

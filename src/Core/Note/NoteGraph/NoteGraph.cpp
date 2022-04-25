@@ -3,24 +3,70 @@
 #include "../../../Render/Draw/Draw.h"
 #include "../../../Globals.h"
 
-float NoteGraph::GetNoteAreaScreenHeight(Area screenArea) {
-	return vScale * (screenArea.Height() - (screenArea.Height() / KEY_AMOUNT) * 2);
+bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
+
+	// Move by interval
+	if (!selectedNotes.empty() && key >= SDLK_2 && key <= SDLK_9) {
+		// Number pressed, move selected notes
+		bool duplicate = kbFlags & KBFLAG_CTRL;
+		bool invertDir = kbFlags & KBFLAG_SHIFT;
+		bool minor = kbFlags & KBFLAG_ALT;
+
+		int intervalOffset = key - SDLK_1;
+		int keyOffset = Intervals::GetIntervalKeyOffset(intervalOffset, minor, invertDir);
+		
+		if (duplicate) {
+			vector<Note> notesToAdd;
+			for (auto selected : selectedNotes)
+				notesToAdd.push_back(*selected);
+
+			for (auto note : notesToAdd)
+				AddNote(note, true);
+		}
+
+		bool succeeded = TryMoveSelectedNotes(0, keyOffset);
+
+		if (succeeded) {
+			DLOG("{} selected notes {} by {} {} interval", 
+				(duplicate ? "Dupe-moved" : "Moved"),
+				(invertDir ? "down" : "up"),
+				(minor ? "minor" : "major"),
+				FW::NumOrdinal(intervalOffset+1)
+			);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
-Vec NoteGraph::ToScreenPos(GraphPos graphPos, Area screenArea) {
+float NoteGraph::GetTopBarHeight(RenderContext* ctx) {
+	// TODO: This is pretty lame and messy
+	return MIN(ctx->fullNoteGraphScreenArea.Height() / 2.f, 16.f);
+}
+
+Area NoteGraph::GetNoteAreaScreen(RenderContext* ctx) {
+	Area noteArea = ctx->fullNoteGraphScreenArea;
+	noteArea.min.y += GetTopBarHeight(ctx);
+
+	return noteArea;
+}
+
+Vec NoteGraph::ToScreenPos(GraphPos graphPos, RenderContext* ctx) {
 	int relativeTime = graphPos.x - hScroll;
 	float outX = (relativeTime / 1000.f) * hZoom;
 
-	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * GetNoteAreaScreenHeight(screenArea);
-	return Vec(outX, outY) + screenArea.Center();
+	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * (GetNoteAreaScreen(ctx).Height() * vScale);
+	return Vec(outX, outY) + ctx->fullNoteGraphScreenArea.Center();
 }
 
-GraphPos NoteGraph::ToGraphPos(Vec screenPos, Area screenArea) {
-	screenPos -= screenArea.Center();
+GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
+	screenPos -= ctx->fullNoteGraphScreenArea.Center();
 
 	NoteTime x = hScroll + (NoteTime)((1000.f * screenPos.x) / hZoom);
 
-	float height = GetNoteAreaScreenHeight(screenArea);
+	float height = GetNoteAreaScreen(ctx).Height() * vScale;
 
 	// Didn't feel like doing algebra today so:
 	// https://www.wolframalpha.com/input?i=x+%3D+-%28%28y+-+%28a+%2F2%29%29+%2F+a%29+*+v%2C+solve+for+y
@@ -69,7 +115,7 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 		CheckFixNoteOverlap(note);
 }
 
-Note* NoteGraph::AddNote(Note note) {
+Note* NoteGraph::AddNote(Note note, bool ignoreOverlap) {
 	ASSERT(note.IsValid());
 
 	Note* newNote = new Note(note);
@@ -80,7 +126,8 @@ Note* NoteGraph::AddNote(Note note) {
 	NoteTime endTime = newNote->time + newNote->duration;
 	_furthestNoteEndTime = MAX(_furthestNoteEndTime, endTime);
 
-	CheckFixNoteOverlap(newNote);
+	if (!ignoreOverlap)
+		CheckFixNoteOverlap(newNote);
 
 	return newNote;
 }
@@ -120,12 +167,12 @@ void NoteGraph::ClearEverything() {
 	ClearNotes();
 }
 
-void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
+void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
 	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
 
-	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, screenArea);
+	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, ctx);
 	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
 
 	static GraphPos lastMouseGraphPos;
@@ -172,7 +219,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			if (down) {
 				// Reset mode drag info
 				state.dragInfo.selectedNoteLastMouseDown = false;
-				state.dragInfo.startDragPos = ToGraphPos(g_MousePos, screenArea);
+				state.dragInfo.startDragPos = ToGraphPos(g_MousePos, ctx);
 				state.dragInfo.startDragMousePos = g_MousePos;
 				state.dragInfo.startDragSelectedNote = NULL;
 			}
@@ -227,7 +274,7 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 		// Update selected notes in rect
 		if (currentMode == MODE_RECTSELECT) {
-			GraphPos a = state.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, screenArea);
+			GraphPos a = state.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, ctx);
 
 			NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
 			KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
@@ -344,29 +391,30 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
 	}
 
-	void NoteGraph::Render(Area screenArea) {
-		GraphPos graphMousePos = ToGraphPos(g_MousePos, screenArea);
+	void NoteGraph::RenderNotes(RenderContext* ctx) {
+		Area noteAreaScreen = GetNoteAreaScreen(ctx);
+		Vec screenMin = noteAreaScreen.min, screenMax = noteAreaScreen.max;
+
+		GraphPos graphMousePos = ToGraphPos(g_MousePos, ctx);
 
 		KeyInt graphMouseKey = roundf(graphMousePos.y);
 		NoteTime graphMouseTime = graphMousePos.x;
 
-		NoteTime graphViewStartTime =	ToGraphPos(screenArea.min, screenArea).x;
-		NoteTime graphViewEndTime =		ToGraphPos(screenArea.max, screenArea).x;
+		NoteTime graphViewStartTime = ToGraphPos(noteAreaScreen.min, ctx).x;
+		NoteTime graphViewEndTime = ToGraphPos(noteAreaScreen.max, ctx).x;
 
 		// Round start time down to nearest beat
 		graphViewStartTime = (graphViewStartTime / NOTETIME_PER_BEAT) * NOTETIME_PER_BEAT;
 
-		float noteSize = floorf(GetNoteAreaScreenHeight(screenArea) / KEY_AMOUNT);
+		float noteSize = floorf((GetNoteAreaScreen(ctx).Height() * vScale) / KEY_AMOUNT);
 
-		Draw::Rect(screenArea.min, screenArea.max, COL_BLACK);
-
-		float minDrawX = MAX(screenArea.min.x, ToScreenPos({ 0,0 }, screenArea).x);
+		float minDrawX = MAX(noteAreaScreen.min.x, ToScreenPos({ 0,0 }, ctx).x);
 
 		// Horizontal slot lines
 		for (int i = 0; i < KEY_AMOUNT; i++) {
-			auto screenY = screenArea.min.y + ToScreenPos(GraphPos(0, i), screenArea).y;
+			auto screenY = ToScreenPos(GraphPos(0, i), ctx).y;
 
-			Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(screenArea.max.x, screenY), Color(25, 25, 25));
+			Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(noteAreaScreen.max.x, screenY), Color(25, 25, 25));
 		}
 
 		// Vertical lines lines
@@ -379,15 +427,15 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			// More alpha = more important line
 			int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
 
-			auto screenX = ToScreenPos(GraphPos(i, 0), screenArea).x;
+			auto screenX = ToScreenPos(GraphPos(i, 0), ctx).x;
 
 			Color color = Color(255, 255, 255, alpha);
 
-			Draw::Line(Vec(screenX, screenArea.min.y), Vec(screenX, screenArea.max.y), color);
+			Draw::Line(Vec(screenX, screenMin.y), Vec(screenX, screenMax.y), color);
 
 			// Measure numbers
 			if (isMeasureLine)
-				Draw::Text(std::to_string(measure + 1), Vec(screenX, screenArea.min.y), color, { -0.5f, -0.25f });
+				Draw::Text(std::to_string(measure + 1), Vec(screenX, screenMin.y), color, { -0.5f, -0.25f });
 		}
 
 		{ // Draw notes
@@ -397,10 +445,10 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 
 			// TODO: Sub-optimal check requires function calls
 			for (Note* note : *this) {
-				Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), screenArea);
-				float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+				Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), ctx);
+				float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), ctx).x;
 
-				if (screenPos.x > screenArea.max.x || tailEndX < screenArea.min.x)
+				if (screenPos.x > screenMax.x || tailEndX < screenMin.x)
 					continue;
 
 				notesToDraw.push_back(note);
@@ -432,24 +480,24 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 			for (Note* note : notesToDraw) {
 				bool selected = IsNoteSelected(note);
 
-				Vec screenPos = screenArea.min + ToScreenPos(GraphPos(note->time, note->key), screenArea);
-				float tailEndX = screenArea.min.x + ToScreenPos(GraphPos(note->time + note->duration, 0), screenArea).x;
+				Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), ctx);
+				float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), ctx).x;
 
 				// Align pixel-perfect
 				screenPos = screenPos.Rounded();
 
 				Color col = NoteColors::GetKeyColor(note->key);
 				Color tailCol = col;
-				
+
 				float velocityRatio = powf(note->velocity / 255.f, 0.5f);
 				float headScale = 0.6f + velocityRatio;
 
-				col.a =		155 + (velocityRatio * 100);
+				col.a = 155 + (velocityRatio * 100);
 				tailCol.a = 55 + (velocityRatio * 200);
 
 				Vec headCenterPos = screenPos + Vec(noteHeadSize_half * headScale, 0);
 
-				Area headArea = { headCenterPos - noteHeadSize_half*headScale, headCenterPos + noteHeadSize_half*headScale };
+				Area headArea = { headCenterPos - noteHeadSize_half * headScale, headCenterPos + noteHeadSize_half * headScale };
 				Area tailArea = { headCenterPos - Vec(0, noteTailGap), Vec(tailEndX, headCenterPos.y + noteTailGap) };
 				tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
 
@@ -492,9 +540,15 @@ void NoteGraph::UpdateWithInput(Area screenArea, SDL_Event& e) {
 		}
 
 		if (currentMode == NoteGraph::MODE_RECTSELECT) {
-			Vec start = ToScreenPos(state.dragInfo.startDragPos, screenArea);
+			Vec start = ToScreenPos(state.dragInfo.startDragPos, ctx);
 
-			Area selectArea = { ToScreenPos(state.dragInfo.startDragPos, screenArea), g_MousePos };
+			Area selectArea = { ToScreenPos(state.dragInfo.startDragPos, ctx), g_MousePos };
 			Draw::ORect(selectArea, COL_WHITE);
 		}
+	}
+
+	void NoteGraph::Render(RenderContext* ctx) {
+		Draw::Rect(ctx->fullNoteGraphScreenArea, COL_BLACK);
+	
+		RenderNotes(ctx);
 	}

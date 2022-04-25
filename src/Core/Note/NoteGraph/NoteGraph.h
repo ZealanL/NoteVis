@@ -2,10 +2,7 @@
 #include "../NoteTypes.h"
 #include "../../../Types/ByteDataSteam.h"
 
-struct TimeSignature {
-	int num = 4;
-	// TODO: Denominator so we can support 7/8 and such
-};
+
 
 struct GraphPos {
 	NoteTime x;
@@ -45,6 +42,11 @@ public:
 			Vec startDragMousePos;
 			bool selectedNoteLastMouseDown = false;
 		} dragInfo;
+
+		struct {
+			NoteTime startTime;
+			NoteTime curTime;
+		} playInfo;
 		
 	};
 	NoteGraphInputState state;
@@ -60,6 +62,10 @@ public:
 		return selectedNotes.find(note) != selectedNotes.end();
 	}
 
+	struct TimeSignature {
+		int num = 4;
+		// TODO: Denominator so we can support 7/8 and such
+	};
 	TimeSignature timeSig;
 
 	// Horizontal scroll of the note graph
@@ -74,9 +80,16 @@ public:
 	// Time step to snap to
 	int snappingTime = NOTETIME_PER_BEAT / 4;
 
-	float GetNoteAreaScreenHeight(Area screenArea);
-    Vec ToScreenPos(GraphPos graphPos, Area screenArea);
-	GraphPos ToGraphPos(Vec screenPos, Area screenArea);
+	// Returns true if was handled
+	bool TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags);
+
+	struct RenderContext {
+		Area fullNoteGraphScreenArea;
+	};
+	float GetTopBarHeight(RenderContext* ctx);
+	Area GetNoteAreaScreen(RenderContext* ctx);
+    Vec ToScreenPos(GraphPos graphPos, RenderContext* ctx);
+	GraphPos ToGraphPos(Vec screenPos, RenderContext* ctx);
 
 	// Fix any potential overlap with this note, will only modify/remove other notes
     void CheckFixNoteOverlap(Note* note);
@@ -87,12 +100,17 @@ public:
 	int GetNoteCount();
 	void ClearEverything();
 	const set<Note*>& GetNotes() { return _notes; }
-	Note* AddNote(Note note); // Returns pointer to added note
+	Note* AddNote(Note note, bool ignoreOverlap = false); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
 	void ClearNotes();
 
-	void Render(Area screenArea);
-	void UpdateWithInput(Area screenArea, SDL_Event& e);
+
+	void Render(RenderContext* ctx);
+private:
+	void RenderNotes(RenderContext* ctx);
+
+public:
+	void UpdateWithInput(SDL_Event& e, RenderContext* ctx);
 
 	// Returns true if they could be moved, false if not
 	// ignoreOverlap: Don't call CheckFixNoteOverlap after moving

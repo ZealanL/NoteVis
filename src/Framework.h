@@ -129,4 +129,8 @@ namespace FW {
 	string TimeDurationToString(double time);
 
 	size_t HashStr(string str);
+
+	// Get this number as an ordinal string
+	// E.x. NumOrdinal(1) -> "1st", NumOrdinal(52) -> "52nd", etc.
+	string NumOrdinal(uint64 val);
 }

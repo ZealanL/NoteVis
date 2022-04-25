@@ -48,6 +48,29 @@ namespace KeyMask {
 	};
 }
 
+namespace Intervals {
+	using namespace KeyIndex;
+
+	constexpr int KEYS_PER_SET = 7;
+
+	constexpr int MAJOR[KEYS_PER_SET] = {
+		C, D, E, F, G, A, B,
+	};
+
+	constexpr int MINOR[KEYS_PER_SET] = {
+		C, 
+		Db, // NOTE: Db is not part of the C minor scale, but a "minor second" is a half step
+		Ds, F, G, Gs, A,
+	};
+
+	inline int GetIntervalKeyOffset(int offsetIndex, bool minor, bool invertDirection) {
+		int octaveDelta = offsetIndex / KEYS_PER_SET;
+		int index = offsetIndex % KEYS_PER_SET;
+
+		return (octaveDelta * KEYS_PER_OCTAVE + (minor ? MINOR : MAJOR)[index]) * (invertDirection ? -1 : 1);
+	}
+}
+ 
 namespace ChordDef {
 	struct KeySet {
 		string name;
