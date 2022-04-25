@@ -55,6 +55,10 @@ public:
 		return _furthestNoteEndTime;
 	}
 
+	NoteTime GetGraphEndTime() {
+		return MAX(_furthestNoteEndTime, NOTETIME_PER_BEAT * timeSig.beatCount);
+	}
+
 	Note* hoveredNote = NULL;
 
 	set<Note*> selectedNotes; // Only contains pointers already in _notes 
@@ -63,7 +67,7 @@ public:
 	}
 
 	struct TimeSignature {
-		int num = 4;
+		int beatCount = 4;
 		// TODO: Denominator so we can support 7/8 and such
 	};
 	TimeSignature timeSig;
@@ -118,6 +122,9 @@ public:
 
 	void Serialize(ByteDataStream& bytesOut);
 	void Deserialize(ByteDataStream::ReadIterator& bytesIn);
+
+	// Base size for each note's head, in screen pixels
+	int GetNoteBaseHeadSizeScreen(RenderContext* ctx);
 
 	~NoteGraph() {
 		for (Note* note : _notes)

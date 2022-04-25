@@ -107,11 +107,11 @@ MAKE_ACTION(ShiftSelectedNotesDownOctave, [] {
 
 #pragma region Measure
 MAKE_ACTION(ShiftSelectedNotesLeftMeasure, [] {
-	g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.num * NOTETIME_PER_BEAT, 0);
+	g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
 	}, Action::Keybind(SDLK_LEFT, KBFLAG_CTRL), true);
 
 MAKE_ACTION(ShiftSelectedNotesRightMeasure, [] {
-	g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.num * NOTETIME_PER_BEAT, 0);
+	g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
 	}, Action::Keybind(SDLK_RIGHT, KBFLAG_CTRL), true);
 #pragma endregion
 
