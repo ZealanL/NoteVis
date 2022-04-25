@@ -43,13 +43,13 @@ bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 
 float NoteGraph::GetTopBarHeight(RenderContext* ctx) {
 	// TODO: This is pretty lame and messy
-	return MIN(ctx->fullNoteGraphScreenArea.Height() / 2.f, 16.f);
+	float height = MIN(ctx->fullNoteGraphScreenArea.Height() / 2.f, 32.f);
+	return height;
 }
 
 Area NoteGraph::GetNoteAreaScreen(RenderContext* ctx) {
 	Area noteArea = ctx->fullNoteGraphScreenArea;
 	noteArea.min.y += GetTopBarHeight(ctx);
-
 	return noteArea;
 }
 
@@ -57,16 +57,21 @@ Vec NoteGraph::ToScreenPos(GraphPos graphPos, RenderContext* ctx) {
 	int relativeTime = graphPos.x - hScroll;
 	float outX = (relativeTime / 1000.f) * hZoom;
 
-	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * (GetNoteAreaScreen(ctx).Height() * vScale);
-	return Vec(outX, outY) + ctx->fullNoteGraphScreenArea.Center();
+	auto noteAreaScreen = GetNoteAreaScreen(ctx);
+
+	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * (noteAreaScreen.Height() * vScale);
+	return Vec(outX, outY) + noteAreaScreen.Center();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
-	screenPos -= ctx->fullNoteGraphScreenArea.Center();
+
+	auto noteAreaScreen = GetNoteAreaScreen(ctx);
+
+	screenPos -= noteAreaScreen.Center();
 
 	NoteTime x = hScroll + (NoteTime)((1000.f * screenPos.x) / hZoom);
 
-	float height = GetNoteAreaScreen(ctx).Height() * vScale;
+	float height = noteAreaScreen.Height() * vScale;
 
 	// Didn't feel like doing algebra today so:
 	// https://www.wolframalpha.com/input?i=x+%3D+-%28%28y+-+%28a+%2F2%29%29+%2F+a%29+*+v%2C+solve+for+y
@@ -110,6 +115,8 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 
 	note->time = newX;
 	note->key = newY;
+
+	DLOG("Moved note to {}", newY);
 
 	if (!ignoreOverlap)
 		CheckFixNoteOverlap(note);
