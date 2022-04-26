@@ -3,6 +3,9 @@
 #include "../../../Render/Draw/Draw.h"
 #include "../../../Globals.h"
 
+// NG_NOTIF but local
+#define NOTIF(s, ...) this->logNotifs.Add(std::format(s, ##__VA_ARGS__))
+
 bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 
 	// Move by interval
@@ -14,6 +17,10 @@ bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 
 		int intervalOffset = key - SDLK_1;
 		int keyOffset = Intervals::GetIntervalKeyOffset(intervalOffset, minor, invertDir);
+
+		// Check if this interval isn't different in maj/min (e.x. perfect 4th)
+		// TODO: This is inefficient (add something in intervals?)
+		bool minorMajorSame = keyOffset == Intervals::GetIntervalKeyOffset(intervalOffset, !minor, invertDir);
 
 		if (duplicate) {
 			vector<Note> notesToAdd;
@@ -27,11 +34,12 @@ bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 		bool succeeded = TryMoveSelectedNotes(0, keyOffset);
 
 		if (succeeded) {
-			DLOG("{} selected notes {} by {} {} interval",
-				(duplicate ? "Dupe-moved" : "Moved"),
-				(invertDir ? "down" : "up"),
-				(minor ? "minor" : "major"),
-				FW::NumOrdinal(intervalOffset + 1)
+			NOTIF("{} selected note(s) {} by a {}.",
+				duplicate ? "Dupe-moved" : "Moved",
+				invertDir ? "down" : "up",
+
+				// Just say "octave" if it was an octave, otherwise say the interval
+				(keyOffset % KEYS_PER_OCTAVE) ? ((minorMajorSame ? "" : (minor ? "minor " : "major ")) + FW::NumOrdinal(intervalOffset + 1)) : "octave"
 			);
 		}
 
@@ -172,6 +180,7 @@ int NoteGraph::GetNoteCount() {
 
 void NoteGraph::ClearEverything() {
 	ClearNotes();
+	NOTIF("Cleared everything.");
 }
 
 void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
@@ -209,8 +218,6 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 						// Prioritize later notes
 						if (hoveredNote && note->time < hoveredNote->time)
 							continue;
-
-
 
 						hoveredNote = note;
 					}

@@ -38,7 +38,7 @@ string FW::NumOrdinal(uint64 val) {
 		case 3:
 			return out + "rd";
 		}
-	} else {
-		return out + "th";
 	}
+	
+	return out + "th";
 }

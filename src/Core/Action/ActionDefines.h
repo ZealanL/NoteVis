@@ -12,7 +12,12 @@
 ///////////////////////////////
 
 MAKE_ACTION(Undo, [] {
-	Core::UndoRestoreHistory();
+	if (Core::UndoRestoreHistory()) {
+		NG_NOTIF("Reverted last change.");
+	} else {
+		NG_NOTIF("Nothing left to undo.");
+	}
+
 	}, Action::Keybind(SDLK_z, KBFLAG_CTRL), false);
 
 #pragma region Notes
@@ -69,7 +74,7 @@ MAKE_ACTION(InvertSelectedNotes, [] {
 	for (Note* selected : g_NoteGraph.selectedNotes)
 		g_NoteGraph.CheckFixNoteOverlap(selected);
 
-	DLOG("Inverted {} notes, key range: {}", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
+	NG_NOTIF("Inverted {} notes (key range: {})", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
 
 	}, Action::Keybind(SDLK_i), true);
 

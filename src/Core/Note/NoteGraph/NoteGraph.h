@@ -112,10 +112,11 @@ public:
 
 
 	void Render(RenderContext* ctx);
+
 private:
 	void RenderNotes(RenderContext* ctx);
-
 public:
+
 	void UpdateWithInput(SDL_Event& e, RenderContext* ctx);
 
 	// Returns true if they could be moved, false if not
