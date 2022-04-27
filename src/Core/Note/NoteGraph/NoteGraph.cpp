@@ -32,7 +32,6 @@ bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 		}
 
 		bool succeeded = TryMoveSelectedNotes(0, keyOffset);
-
 		if (succeeded) {
 			NOTIF("{} selected note(s) {} by a {}.",
 				duplicate ? "Dupe-moved" : "Moved",
@@ -185,8 +184,9 @@ void NoteGraph::ClearEverything() {
 
 void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
-	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
-	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
+	bool isShiftDown =		g_KeyboardState[SDL_SCANCODE_RSHIFT]	|| g_KeyboardState[SDL_SCANCODE_LSHIFT];
+	bool isControlDown =	g_KeyboardState[SDL_SCANCODE_RCTRL]		|| g_KeyboardState[SDL_SCANCODE_LCTRL];
+	bool isAltDown =		g_KeyboardState[SDL_SCANCODE_RALT]		|| g_KeyboardState[SDL_SCANCODE_LALT];
 
 	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, ctx);
 	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
@@ -230,8 +230,40 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	// Scroll graph
 	if (e.type == SDL_MOUSEWHEEL) {
-		hScroll += -e.wheel.y * (isShiftDown ? 5000 : 500);
-		hScroll = CLAMP(g_NoteGraph.hScroll, 0, g_NoteGraph.GetGraphEndTime());
+		int scrollDelta = e.wheel.y;
+
+		// scroll = move graph horizontally
+		//	+ control = zoom in/out horizontally
+		// scroll + alt = move graph vertically
+		//	+ control + alt = zoom in/out vertically
+
+		// if shift is down, scroll/move faster
+
+		bool horizontal = !isAltDown;
+
+		if (horizontal) {
+			if (isControlDown) {
+				// Horizontal zoom
+				hZoom *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
+				hZoom = CLAMP(hZoom, 20, 2000);
+			} else {
+				// Horizontal scroll
+				hScroll += -scrollDelta * (isShiftDown ? 5000 : 500) / (hZoom / 100);
+				hScroll = CLAMP(hScroll, 0, GetGraphEndTime());
+			}
+		} else {
+			// TODO: Vertical scrolling maybe?
+			/*
+			if (isControlDown) {
+				// Vertical zoom
+				vScale *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
+				vScale = CLAMP(vScale, 1, 20);
+			} else {
+				// Vertical scroll
+				
+			}
+			*/
+		}
 	}
 
 	// Mouse click
