@@ -120,8 +120,8 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define CLAMP(v, min, max) MAX(min, MIN(v, max))
 
 // Snap a number to a rounding interval
-#define ISNAP(val, roundingInterval) (val + roundingInterval/2 - ((val + roundingInterval/2) % roundingInterval))
-#define FSNAP(val, roundingInterval) (val + roundingInterval/2 - fmodf((val + roundingInterval/2), roundingInterval))
+#define ISNAP(val, roundingInterval) FW::IntSnap(val, roundingInterval)
+#define FSNAP(val, roundingInterval) fmodf(val, roundingInterval)
 
 // For scoped enums that shouldn't be classes
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
@@ -137,4 +137,11 @@ namespace FW {
 	// Get this number as an ordinal string
 	// E.x. NumOrdinal(1) -> "1st", NumOrdinal(52) -> "52nd", etc.
 	string NumOrdinal(uint64 val);
+
+	template<typename T>
+	std::enable_if_t<std::is_integral_v<T>, T> IntSnap(T val, T snappingInterval) {
+		T a = (val / snappingInterval) * snappingInterval;
+		T b = val + snappingInterval;
+		return (val - a > val - b) ? a : b;
+	}
 }

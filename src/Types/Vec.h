@@ -243,8 +243,8 @@ struct Area {
 		return newArea;
 	}
 
-	Area MoveRel(float xRel, float yRel) {
-		Vec moveVec = Vec(xRel * Width(), yRel * Height());
+	Area MoveRel(float xRelScale, float yRelScale) {
+		Vec moveVec = Vec(xRelScale * Width(), yRelScale * Height());
 		return Move(moveVec);
 	}
 

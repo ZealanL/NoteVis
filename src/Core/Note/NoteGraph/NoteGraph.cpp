@@ -304,7 +304,8 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				}
 
 			case MODE_RECTSELECT:
-			case MODE_DRAGNOTES: {
+			case MODE_DRAGNOTES:
+			case MODE_DRAGNOTELENGTHS: {
 				// Stop selecting/dragging
 				currentMode = MODE_IDLE;
 
@@ -335,7 +336,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			&& (g_MousePos.Distance(state.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
 			// Standard selection
 			// Also possible drag
-			currentMode = MODE_DRAGNOTES;
+			currentMode = isShiftDown ? MODE_DRAGNOTELENGTHS : MODE_DRAGNOTES;
 		}
 	}
 
@@ -356,44 +357,45 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		}
 	}
 
-	if (currentMode == MODE_DRAGNOTES) {
-		if (!selectedNotes.empty()) {
-			int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
-			int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
+	Note* dragBaseNote = state.dragInfo.startDragSelectedNote;
+	if (dragBaseNote) {
+		if (currentMode == MODE_DRAGNOTES) {
+			if (!selectedNotes.empty() && dragBaseNote) {
+				int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
+				int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
 
-			Note* first = *selectedNotes.begin();
-			Note* earliestNote = first;
-			NoteTime minTime = first->time;
-			KeyInt minKey = first->key, maxKey = first->key;
-			for (Note* note : selectedNotes) {
-				minKey = MIN(note->key, minKey);
-				maxKey = MAX(note->key, maxKey);
+				Note* first = *selectedNotes.begin();
+				NoteTime minTime = first->time;
+				KeyInt minKey = first->key, maxKey = first->key;
+				for (Note* note : selectedNotes) {
+					minKey = MIN(note->key, minKey);
+					maxKey = MAX(note->key, maxKey);
+				}
 
-				if (note->time < minTime) {
-					earliestNote = note;
-					minTime = note->time;
+				// Limit move
+				keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
+				timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
+
+				if (snappingTime > 1) {
+					// This will be the positional basis for our snapping
+					timeDelta = ISNAP(dragBaseNote->time + timeDelta, snappingTime) - dragBaseNote->time;
+				}
+
+				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
+
+					state.dragInfo.startDragPos.x += timeDelta;
+					state.dragInfo.startDragPos.y += keyDelta;
 				}
 			}
+		} else if (currentMode == MODE_DRAGNOTELENGTHS) {
+			// Drag-moving selected notes' lengths
+			if (!selectedNotes.empty()) {
+				NoteTime minDuration = MAX(1, snappingTime);
+				NoteTime dragTimeDelta = ISNAP(mouseGraphPos.x - (dragBaseNote->time + dragBaseNote->duration), snappingTime);
 
-			// Limit move
-			keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
-			timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
-
-			if (snappingTime > 1) {
-				// This will be the positional basis for our snapping
-				Note* baseNoteForSnap = state.dragInfo.startDragSelectedNote;
-
-				// If dragInfo.startDragSelectedNote wasn't set, just use the earliest selected note
-				if (!baseNoteForSnap)
-					baseNoteForSnap = earliestNote;
-
-				timeDelta = ISNAP(baseNoteForSnap->time + timeDelta, snappingTime) - baseNoteForSnap->time;
-			}
-
-			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
-
-				state.dragInfo.startDragPos.x += timeDelta;
-				state.dragInfo.startDragPos.y += keyDelta;
+				for (auto note : selectedNotes) {
+					note->duration = MAX(note->duration + dragTimeDelta, minDuration);
+				}
 			}
 		}
 	}
@@ -574,7 +576,14 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 			if (selected) {
 				// Selected notes are outlined with white
 				Draw::Rect(headArea.Expand(2), COL_WHITE);
-				Draw::Rect(tailArea.Expand(2), COL_WHITE);
+
+				if (currentMode == MODE_DRAGNOTELENGTHS) {
+					// Only outline end of tail
+					Draw::Rect(tailArea.Move(Vec(2, 0)).Expand(1), COL_WHITE);
+				} else {
+					Draw::Rect(tailArea.Expand(2), COL_WHITE);
+				}
+				
 
 			} else {
 				if (dimNonSelected)
