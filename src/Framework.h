@@ -119,6 +119,10 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define MIN3(a, b, c) MIN(MIN(a, b), c)
 #define CLAMP(v, min, max) MAX(min, MIN(v, max))
 
+// Snap a number to a rounding interval
+#define ISNAP(val, roundingInterval) (val + roundingInterval/2 - ((val + roundingInterval/2) % roundingInterval))
+#define FSNAP(val, roundingInterval) (val + roundingInterval/2 - fmodf((val + roundingInterval/2), roundingInterval))
+
 // For scoped enums that shouldn't be classes
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
 

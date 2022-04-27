@@ -319,11 +319,8 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 			if (down) {
 				// Move playhead
-				// TODO: Global framework snapping function
 				state.playInfo.startTime = CLAMP(mouseGraphPos.x, 0, GetGraphEndTime());
-				state.playInfo.startTime += snappingTime / 2;
-				state.playInfo.startTime -= state.playInfo.startTime % snappingTime;
-
+				state.playInfo.startTime = ISNAP(state.playInfo.startTime, snappingTime);
 			}
 		}
 	}
@@ -390,8 +387,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				if (!baseNoteForSnap)
 					baseNoteForSnap = earliestNote;
 
-				NoteTime unsnappedMoveTime = baseNoteForSnap->time + timeDelta;
-				timeDelta -= ((unsnappedMoveTime + (snappingTime / 2)) % snappingTime) - (snappingTime / 2);
+				timeDelta = ISNAP(baseNoteForSnap->time + timeDelta, snappingTime) - baseNoteForSnap->time;
 			}
 
 			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
