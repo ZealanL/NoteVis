@@ -184,9 +184,9 @@ void NoteGraph::ClearEverything() {
 
 void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
-	bool isShiftDown =		g_KeyboardState[SDL_SCANCODE_RSHIFT]	|| g_KeyboardState[SDL_SCANCODE_LSHIFT];
-	bool isControlDown =	g_KeyboardState[SDL_SCANCODE_RCTRL]		|| g_KeyboardState[SDL_SCANCODE_LCTRL];
-	bool isAltDown =		g_KeyboardState[SDL_SCANCODE_RALT]		|| g_KeyboardState[SDL_SCANCODE_LALT];
+	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
+	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
+	bool isAltDown = g_KeyboardState[SDL_SCANCODE_RALT] || g_KeyboardState[SDL_SCANCODE_LALT];
 
 	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, ctx);
 	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
@@ -204,12 +204,12 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				for (Note* note : *this) {
 
 					int screenNoteStartTime = ToScreenPos({ note->time, (float)note->key }, ctx).x;
-					int screenNoteEndTime = 
+					int screenNoteEndTime =
 						MAX(
-							ToScreenPos({ note->time + note->duration, (float)note->key }, ctx).x, 
+							ToScreenPos({ note->time + note->duration, (float)note->key }, ctx).x,
 							screenNoteStartTime + (GetNoteBaseHeadSizeScreen(ctx) * 2)
 						);
-					
+
 					if (
 						(g_MousePos.x >= screenNoteStartTime && g_MousePos.x < screenNoteEndTime) // X is overlapping
 						&& (mouseGraphKey == note->key) // Y is overlapping
@@ -260,7 +260,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				vScale = CLAMP(vScale, 1, 20);
 			} else {
 				// Vertical scroll
-				
+
 			}
 			*/
 		}
@@ -291,8 +291,9 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 					if (hoveredNote && !IsNoteSelected(hoveredNote)) {
 						selectedNotes.insert(hoveredNote);
 						state.dragInfo.selectedNoteLastMouseDown = true;
-						state.dragInfo.startDragSelectedNote = hoveredNote;
 					}
+
+					state.dragInfo.startDragSelectedNote = hoveredNote;
 
 				} else {
 					if (hoveredNote) {
@@ -332,11 +333,11 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		if (isControlDown) {
 			// Start rect selection
 			currentMode = MODE_RECTSELECT;
-		} else if (state.dragInfo.selectedNoteLastMouseDown
+		} else if (state.dragInfo.startDragSelectedNote
 			&& (g_MousePos.Distance(state.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
 			// Standard selection
 			// Also possible drag
-			currentMode = isShiftDown ? MODE_DRAGNOTELENGTHS : MODE_DRAGNOTES;
+			currentMode = isAltDown ? MODE_DRAGNOTELENGTHS : MODE_DRAGNOTES;
 		}
 	}
 
@@ -358,44 +359,43 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	}
 
 	Note* dragBaseNote = state.dragInfo.startDragSelectedNote;
-	if (dragBaseNote) {
-		if (currentMode == MODE_DRAGNOTES) {
-			if (!selectedNotes.empty() && dragBaseNote) {
-				int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
-				int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
+	if (currentMode == MODE_DRAGNOTES) {
+		if (!selectedNotes.empty() && dragBaseNote) {
+			int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
+			int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
 
-				Note* first = *selectedNotes.begin();
-				NoteTime minTime = first->time;
-				KeyInt minKey = first->key, maxKey = first->key;
-				for (Note* note : selectedNotes) {
-					minKey = MIN(note->key, minKey);
-					maxKey = MAX(note->key, maxKey);
-				}
-
-				// Limit move
-				keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
-				timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
-
-				if (snappingTime > 1) {
-					// This will be the positional basis for our snapping
-					timeDelta = ISNAP(dragBaseNote->time + timeDelta, snappingTime) - dragBaseNote->time;
-				}
-
-				if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
-
-					state.dragInfo.startDragPos.x += timeDelta;
-					state.dragInfo.startDragPos.y += keyDelta;
-				}
+			Note* first = *selectedNotes.begin();
+			NoteTime minTime = first->time;
+			KeyInt minKey = first->key, maxKey = first->key;
+			for (Note* note : selectedNotes) {
+				minKey = MIN(note->key, minKey);
+				maxKey = MAX(note->key, maxKey);
 			}
-		} else if (currentMode == MODE_DRAGNOTELENGTHS) {
-			// Drag-moving selected notes' lengths
-			if (!selectedNotes.empty()) {
-				NoteTime minDuration = MAX(1, snappingTime);
-				NoteTime dragTimeDelta = ISNAP(mouseGraphPos.x - (dragBaseNote->time + dragBaseNote->duration), snappingTime);
 
-				for (auto note : selectedNotes) {
-					note->duration = MAX(note->duration + dragTimeDelta, minDuration);
-				}
+			// Limit move
+			keyDelta = CLAMP(keyDelta, -minKey, KEY_AMOUNT - maxKey - 1);
+			timeDelta = CLAMP(timeDelta, -minTime, timeDelta);
+
+			if (snappingTime > 1) {
+				// This will be the positional basis for our snapping
+				timeDelta = ISNAP(dragBaseNote->time + timeDelta, snappingTime) - dragBaseNote->time;
+			}
+
+			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
+
+				state.dragInfo.startDragPos.x += timeDelta;
+				state.dragInfo.startDragPos.y += keyDelta;
+			}
+		}
+	} else if (currentMode == MODE_DRAGNOTELENGTHS) {
+		if (!selectedNotes.empty() && dragBaseNote) {
+			// Drag-moving selected notes' lengths
+
+			NoteTime minDuration = MAX(1, snappingTime);
+			NoteTime dragTimeDelta = ISNAP(mouseGraphPos.x - (dragBaseNote->time + dragBaseNote->duration), snappingTime);
+
+			for (auto note : selectedNotes) {
+				note->duration = MAX(note->duration + dragTimeDelta, minDuration);
 			}
 		}
 	}
@@ -460,7 +460,8 @@ void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
 }
 
 int NoteGraph::GetNoteBaseHeadSizeScreen(RenderContext* ctx) {
-	return floorf((GetNoteAreaScreen(ctx).Height() * vScale) / KEY_AMOUNT);
+	constexpr float NOTEHEAD_SIZE_SCALE = 1.25f; // Slightly bigger than the slot
+	return floorf((GetNoteAreaScreen(ctx).Height() * vScale) / KEY_AMOUNT * NOTEHEAD_SIZE_SCALE);
 }
 
 void NoteGraph::RenderNotes(RenderContext* ctx) {
@@ -583,7 +584,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 				} else {
 					Draw::Rect(tailArea.Expand(2), COL_WHITE);
 				}
-				
+
 
 			} else {
 				if (dimNonSelected)
@@ -626,8 +627,8 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 		// Playhead line
 		Draw::PixelPerfectLine(topPoint, Vec(screenX, screenMax.y), COL_WHITE);
-		Draw::PixelPerfectLine(Vec(screenX-1, screenMin.y), Vec(screenX-1, screenMax.y), COL_BLACK);
-		Draw::PixelPerfectLine(Vec(screenX+1, screenMin.y), Vec(screenX+1, screenMax.y), COL_BLACK);
+		Draw::PixelPerfectLine(Vec(screenX - 1, screenMin.y), Vec(screenX - 1, screenMax.y), COL_BLACK);
+		Draw::PixelPerfectLine(Vec(screenX + 1, screenMin.y), Vec(screenX + 1, screenMax.y), COL_BLACK);
 
 		vector<Vec> playheadPoints = {
 			topPoint,
