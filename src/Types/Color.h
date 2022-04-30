@@ -40,6 +40,7 @@ struct Color {
 
 // Global colors
 #define COL_WHITE		Color(255, 255, 255)
+#define COL_WHITE_DIM	Color(255, 255, 180)
 #define COL_BLACK		Color(  0,   0,   0)
 #define COL_GRAY		Color(100, 100, 100)
 #define COL_DARK_GRAY	Color( 50,  50,  50)

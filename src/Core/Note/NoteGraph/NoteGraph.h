@@ -28,9 +28,14 @@ public:
 	// Current mode
 	enum {
 		MODE_IDLE,
-		MODE_RECTSELECT,
-		MODE_DRAGNOTES,
-		MODE_DRAGNOTELENGTHS,
+
+		MODE_RECTSELECT, // Use a rectangle shape to select notes
+
+		MODE_DRAGNOTES, // Drag the selected note(s) around on the graph
+		MODE_DRAGNOTELENGTHS, // Drag the length of the selected note(s)
+
+		MODE_ADJUSTNOTEVEL, // Adjust the velocity of the selected note(s)
+
 		MODE_PLAY
 	};
 	int currentMode = MODE_IDLE;
@@ -104,7 +109,7 @@ public:
 	void MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap = false);
 
 	int GetNoteCount();
-	void ClearEverything();
+	void ClearEverything(bool notify = true);
 	const set<Note*>& GetNotes() { return _notes; }
 	Note* AddNote(Note note, bool ignoreOverlap = false); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed

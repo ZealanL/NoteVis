@@ -179,7 +179,10 @@
     <ClCompile Include="libremidi\libremidi.cpp" />
     <ClCompile Include="libremidi\reader.cpp" />
     <ClCompile Include="libremidi\writer.cpp" />
+    <ClCompile Include="src\Core\Action\Action.cpp" />
+    <ClCompile Include="src\Core\Action\Defines\ActionDefines.cpp" />
     <ClCompile Include="src\Core\Core.cpp" />
+    <ClCompile Include="src\Core\HistorySystem\HistorySystem.cpp" />
     <ClCompile Include="src\Core\MIDI\MIDI.cpp" />
     <ClCompile Include="src\Core\UI\Dialog\Dialog.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
@@ -220,7 +223,7 @@
     <ClInclude Include="libremidi\reader.hpp" />
     <ClInclude Include="libremidi\writer.hpp" />
     <ClInclude Include="src\Core\Action\Action.h" />
-    <ClInclude Include="src\Core\Action\ActionDefines.h" />
+    <ClInclude Include="src\Core\Action\Defines\ActionDefineSystem.h" />
     <ClInclude Include="src\Core\Core.h" />
     <ClInclude Include="src\Core\MIDI\MIDI.h" />
     <ClInclude Include="src\Core\UI\Dialog\Dialog.h" />
@@ -237,6 +240,7 @@
     <ClInclude Include="src\Render\Renderer.h" />
     <ClInclude Include="src\Types\ByteDataSteam.h" />
     <ClInclude Include="src\Types\Color.h" />
+    <ClInclude Include="src\Core\HistorySystem\HistorySystem.h" />
     <ClInclude Include="src\Types\StaticList.h" />
     <ClInclude Include="src\Types\Vec.h" />
   </ItemGroup>

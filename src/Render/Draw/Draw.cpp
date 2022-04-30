@@ -54,12 +54,18 @@ Vec Draw::GetTextSize(string str, float wrapWidth) {
 	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, wrapWidth, str.c_str()));
 }
 
-void Draw::Text(string str, Vec pos, Color color, Vec center) {
+void Draw::Text(string str, Vec pos, Color color, Vec center, BYTE shadowAlpha) {
 	if (!str.empty()) {
-		float size = ImGui::GetFontSize();
+		float fontSize = ImGui::GetFontSize();
 		auto font = ImGui::GetFont();
-		Vec realPos = pos - center * GetTextSize(str);
-		DL->AddText(font, size, IMV(realPos), IMC(color), str.c_str());
+		Vec textSize = GetTextSize(str);
+		Vec realPos = pos - center * textSize;
+
+		if (shadowAlpha > 0) {
+			Draw::Rect(realPos - 2, realPos + textSize + 2, Color(0, 0, 0, shadowAlpha), 1.f);
+		}
+
+		DL->AddText(font, fontSize, IMV(realPos), IMC(color), str.c_str());
 	}
 }
 

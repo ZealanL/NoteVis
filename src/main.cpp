@@ -85,6 +85,7 @@ int _main(vector<string> args) {
 	}
 
 	// Initialize
+	g_Actions.Init();
 	Renderer::Init();
 	UI::InitImGuiTheme();
 

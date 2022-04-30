@@ -123,8 +123,6 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 	note->time = newX;
 	note->key = newY;
 
-	DLOG("Moved note to {}", newY);
-
 	if (!ignoreOverlap)
 		CheckFixNoteOverlap(note);
 }
@@ -177,9 +175,11 @@ int NoteGraph::GetNoteCount() {
 	return _notes.size();
 }
 
-void NoteGraph::ClearEverything() {
+void NoteGraph::ClearEverything(bool notify) {
 	ClearNotes();
-	NOTIF("Cleared everything.");
+
+	if (notify)
+		NOTIF("Cleared everything.");
 }
 
 void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
@@ -578,13 +578,21 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 				// Selected notes are outlined with white
 				Draw::Rect(headArea.Expand(2), COL_WHITE);
 
-				if (currentMode == MODE_DRAGNOTELENGTHS) {
-					// Only outline end of tail
-					Draw::Rect(tailArea.Move(Vec(2, 0)).Expand(1), COL_WHITE);
-				} else {
-					Draw::Rect(tailArea.Expand(2), COL_WHITE);
-				}
+				if (currentMode == MODE_ADJUSTNOTEVEL) {
+					// Show velocity below head
+					int textAlpha = (note->velocity / (200.f / 255.f)) + 50;
+					string velStr = std::to_string(note->velocity);
 
+					Draw::Text(velStr, headArea.Bottom(), Color(255, 255, 255, textAlpha), Vec(0.5, -0.5f), textAlpha);
+				} else {
+					if (currentMode == MODE_DRAGNOTELENGTHS) {
+						// Only outline end of tail
+						Draw::Rect(tailArea.Move(Vec(2, 0)).Expand(1), COL_WHITE);
+					} else {
+						// Outline entire tail
+						Draw::Rect(tailArea.Expand(2), COL_WHITE);
+					}
+				}
 
 			} else {
 				if (dimNonSelected)

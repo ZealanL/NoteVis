@@ -3,7 +3,7 @@
 #include "../Globals.h"
 #include "../Types/Vec.h"
 #include "../Types/Color.h"
-#include "Action/Action.h"
+#include "Action/Defines/ActionDefineSystem.h"
 #include "Note/NoteGraph/NoteGraph.h"
 #include "../Types/StaticList.h"
 
@@ -16,11 +16,4 @@ namespace Core {
 	void OnUserExit();
 
 	void ProcessEvent(SDL_Event& e);
-
-	// Add the g_NoteGraph's serialize data to g_NoteGraphHistory
-	void UpdateHistory();
-
-	// Restore (and pop) last serialized data from g_NoteGraphHistory to g_NoteGraph
-	// Returns true if history was restored, false if no history
-	bool UndoRestoreHistory();
 }

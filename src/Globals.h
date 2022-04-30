@@ -3,7 +3,8 @@
 
 #include "Framework.h"
 #include "Types/Vec.h"
-#include "Core/Action/Action.h"
+#include "Core/HistorySystem/HistorySystem.h"
+#include "Core/Action/Defines/ActionDefineSystem.h"
 #include "Core/Note/NoteGraph/NoteGraph.h"
 
 #include "Core/UI/Dialog/Dialog.h"
@@ -24,12 +25,18 @@ GBLVAR(SDL_Window*,		SDL_Window);
 GBLVAR(SDL_GLContext,	SDL_GLContext);
 
 GBLVAR(Vec, MousePos);
-GBLVAR(vector<Action>,	Actions);
+GBLVAR(ActionDefineSystem, Actions);
+
+// TODO: Make proper history system interface (?)
+GBLVAR(HistorySystem, History)
 
 GBLVAR(NoteGraph, NoteGraph);
 
 GBLVAR(bool, KeyboardState[SDL_NUM_SCANCODES], {});
 GBLVAR(bool, MouseState[6], {});
+
+#pragma region Global Hold Actions
+#pragma endregion
 
 #pragma endregion
 #undef GBLVAR

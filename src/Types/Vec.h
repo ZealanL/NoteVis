@@ -229,10 +229,12 @@ struct Area {
 		return Vec(min.x + Width() * widthRatio, min.y + Height() * heightRatio);
 	}
 
+	Vec Top() { return GetPosRel(0.5, 0); }
 	Vec TopLeft() { return GetPosRel(0, 0); }
 	Vec TopRight() { return GetPosRel(1, 0); }
 	Vec Left() { return GetPosRel(0, 0.5f); }
 	Vec Right() { return GetPosRel(1, 0.5f); }
+	Vec Bottom() { return GetPosRel(0.5, 1); }
 	Vec BottomLeft() { return GetPosRel(0, 1); }
 	Vec BottomRight() { return GetPosRel(1, 1); }
 

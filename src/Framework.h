@@ -104,7 +104,7 @@ typedef BYTE uint8_t;
 #define MERGE_IDR(a, b) MERGE_IDR_INNER(a, b)
 
 // Simple structure for running a function on initialization via constructor
-#define INIT_FUNC(f, nameAppend) const static volatile auto MERGE_IDR(__RunFuncOnInit_, __COUNTER__) = __RFOI(f); 
+#define INIT_FUNC(f) const static volatile auto MERGE_IDR(__RunFuncOnInit_, __COUNTER__) = __RFOI(f); 
 struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 
 // Debug assertion
