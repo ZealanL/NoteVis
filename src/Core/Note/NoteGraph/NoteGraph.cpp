@@ -399,6 +399,8 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			}
 		}
 	}
+
+	g_History.Update();
 }
 
 bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
@@ -436,8 +438,6 @@ void NoteGraph::Serialize(ByteDataStream& bytesOut) {
 
 		bytesOut.WriteAsBytes(IsNoteSelected(note));
 	}
-
-	DLOG("NoteGraph::Serialize(): Wrote {} notes (bytesOut size: {})", _notes.size(), bytesOut.size());
 }
 
 void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
