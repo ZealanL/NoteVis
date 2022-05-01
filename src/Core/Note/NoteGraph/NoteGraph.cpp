@@ -183,6 +183,8 @@ void NoteGraph::ClearEverything(bool notify) {
 }
 
 void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
+	bool shouldUpdateHistory = false;
+
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
 	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
 	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
@@ -230,6 +232,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	// Scroll graph
 	if (e.type == SDL_MOUSEWHEEL) {
+		shouldUpdateHistory = true;
 		int scrollDelta = e.wheel.y;
 
 		// scroll = move graph horizontally
@@ -268,6 +271,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	// Mouse click
 	if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
+		shouldUpdateHistory = true;
 		bool down = e.type == SDL_MOUSEBUTTONDOWN;
 
 		int mouseButton = e.button.button;
@@ -322,7 +326,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			if (down) {
 				// Move playhead
 				state.playInfo.startTime = CLAMP(mouseGraphPos.x, 0, GetGraphEndTime());
-				state.playInfo.startTime = ISNAP(state.playInfo.startTime, snappingTime);
+				state.playInfo.startTime = ISNAP(state.playInfo.startTime, snappingTime);			
 			}
 		}
 	}
@@ -330,6 +334,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	constexpr float MIN_MOUSE_DRAG_DIST_PX = 3.f;
 
 	if (isDragging) {
+		shouldUpdateHistory = true;
 		if (isControlDown) {
 			// Start rect selection
 			currentMode = MODE_RECTSELECT;
@@ -343,6 +348,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	// Update selected notes in rect
 	if (currentMode == MODE_RECTSELECT) {
+		shouldUpdateHistory = true;
 		GraphPos a = state.dragInfo.startDragPos, b = ToGraphPos(g_MousePos, ctx);
 
 		NoteTime startTime = MIN(a.x, b.x), endTime = MAX(a.x, b.x);
@@ -352,14 +358,17 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			selectedNotes.clear();
 
 		for (Note* note : *this) {
-			if (note->time + note->duration >= startTime && note->time <= endTime)
-				if (note->key >= startKey && note->key <= endKey)
+			if (note->time + note->duration >= startTime && note->time <= endTime) {
+				if (note->key >= startKey && note->key <= endKey) {
 					selectedNotes.insert(note);
+				}
+			}
 		}
 	}
 
 	Note* dragBaseNote = state.dragInfo.startDragSelectedNote;
 	if (currentMode == MODE_DRAGNOTES) {
+		shouldUpdateHistory = true;
 		if (!selectedNotes.empty() && dragBaseNote) {
 			int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
 			int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
@@ -382,12 +391,12 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			}
 
 			if (TryMoveSelectedNotes(timeDelta, keyDelta, true)) {
-
 				state.dragInfo.startDragPos.x += timeDelta;
 				state.dragInfo.startDragPos.y += keyDelta;
 			}
 		}
 	} else if (currentMode == MODE_DRAGNOTELENGTHS) {
+		shouldUpdateHistory = true;
 		if (!selectedNotes.empty() && dragBaseNote) {
 			// Drag-moving selected notes' lengths
 
@@ -400,7 +409,8 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		}
 	}
 
-	g_History.Update();
+	if (shouldUpdateHistory)
+		g_History.Update();
 }
 
 bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
@@ -430,14 +440,23 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverla
 void NoteGraph::Serialize(ByteDataStream& bytesOut) {
 	bytesOut.reserve(GetNoteCount() * sizeof(Note));
 
+	vector<ByteDataStream> noteByteDatas;
 	for (Note* note : _notes) {
-		bytesOut.WriteAsBytes(note->key);
-		bytesOut.WriteAsBytes(note->time);
-		bytesOut.WriteAsBytes(note->duration);
-		bytesOut.WriteAsBytes(note->velocity);
-
-		bytesOut.WriteAsBytes(IsNoteSelected(note));
+		ByteDataStream byteData;
+		byteData.WriteAsBytes(note->key);
+		byteData.WriteAsBytes(note->time);
+		byteData.WriteAsBytes(note->duration);
+		byteData.WriteAsBytes(note->velocity);
+		byteData.WriteAsBytes(IsNoteSelected(note));
+		noteByteDatas.push_back(byteData);
 	}
+
+	// Prevent the noteByteDatas from being ordered by memory addresses 
+	//	(otherwise two identical notegraphs notes could serialize in a different order)
+	std::sort(noteByteDatas.begin(), noteByteDatas.end());
+
+	for (auto& noteByteData : noteByteDatas)
+		bytesOut.insert(bytesOut.end(), noteByteData.begin(), noteByteData.end());
 }
 
 void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
@@ -455,8 +474,6 @@ void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
 		if (selected)
 			selectedNotes.insert(note);
 	}
-
-	DLOG("NoteGraph::Deserialize(): Read {} notes", notesRead);
 }
 
 int NoteGraph::GetNoteBaseHeadSizeScreen(RenderContext* ctx) {

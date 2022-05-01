@@ -73,6 +73,15 @@ public:
 			return (this->size() == other.size()) && !memcmp(this->GetBasePointer(), other.GetBasePointer(), this->size());
 		}
 	}
+
+	FW::HASH CalculateHash() {
+		return this->empty() ? NULL : FW::HashData(this->GetBasePointer(), this->size());
+	}
+
+	// Simply compare based off sums of bytes
+	bool operator<(ByteDataStream& other) {
+		return CalculateHash() < other.CalculateHash();
+	}
 };
 
 // Stores the difference from one ByteDataSteam to the next 

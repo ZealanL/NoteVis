@@ -1,22 +1,35 @@
 #pragma once
 #include "../../Types/ByteDataSteam.h"
 
-struct HistoryState {
+class HistoryState {
+private:
+	FW::HASH hash;
+public:
 	double time;
 	ByteDataStream graphData;
+	
+
+	HistoryState(ByteDataStream graphData, double time = CURRENT_TIME) {
+		this->time = CURRENT_TIME;
+		this->graphData = graphData;
+		this->hash = graphData.CalculateHash();
+	}
 
 	bool Matches(HistoryState other) {
-		return this->graphData.DataMatches(other.graphData);
+		return this->hash == other.hash;
 	}
 
 	size_t GetSize() {
 		return graphData.size();
 	}
+
+	FW::HASH GetHash() {
+		return hash;
+	}
 };
 
 class HistorySystem {
 private:
-
 	deque<HistoryState> states;
 
 	// Moved from states, for redoing

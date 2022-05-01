@@ -6,24 +6,24 @@
 HistoryState GetCurrentState() {
 	ByteDataStream data;
 	g_NoteGraph.Serialize(data);
-	return HistoryState(CURRENT_TIME, data);
+	return HistoryState(data);
 }
 
 bool HistorySystem::Update(bool ignoreTime) {
-	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
-	constexpr double MIN_HISTORY_UPDATE_DELAY = 3;
+	auto currentState = GetCurrentState();
 
-	static double lastUpdateTime = 0;
+	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
+	constexpr double MIN_HISTORY_UPDATE_DELAY = 2;
+	static double lastUpdateTime = -DBL_MAX;
 	if (CURRENT_TIME >= lastUpdateTime + MIN_HISTORY_UPDATE_DELAY || ignoreTime) {
 		lastUpdateTime = CURRENT_TIME;
 	} else {
-		// Hasn't been long enough
+		// Hasn't been long enough, 
 		return false;
 	}
 
-	auto currentState = GetCurrentState();
 	if (!states.empty() && states.front().Matches(currentState))
-		return false; // Prevent storing history when nothing actually changed
+		return false; // No change
 
 	// If we were undoing things, remove redo states
 	if (!redoStates.empty()) {
@@ -31,6 +31,7 @@ bool HistorySystem::Update(bool ignoreTime) {
 		redoStates.clear();
 	}
 
+	DLOG("Adding history entry (size = {}mb), hash: {:X}", currentState.GetSize() / (1000.f * 1000.f), currentState.GetHash());
 	states.push_front(currentState);
 
 	size_t MAX_HISTORY_SIZE = (1000 * 1000) * g_ARG_MaxHistoryMemSize;
@@ -80,14 +81,17 @@ bool HistorySystem::Update(bool ignoreTime) {
 }
 
 bool HistorySystem::Undo() {
-	if (!states.empty()) {
+	auto currentState = GetCurrentState();
 
+	if (!states.empty() && states.front().GetHash() == currentState.GetHash())
+		states.pop_front();
+
+	if (!states.empty()) {
 		bool addedCurrent = false;
 
 		if (redoStates.empty()) {
 
 			// If we don't have any undo depth, add the current state to redo states (if not matching)
-			auto currentState = GetCurrentState();
 			if (!currentState.Matches(states.front())) {
 				DLOG("Forced current state to be added to history");
 				redoStates.push_front(currentState);
@@ -97,7 +101,7 @@ bool HistorySystem::Undo() {
 
 		// Move the state we undid to into redoStates
 		if (!addedCurrent)
-			redoStates.push_front(GetCurrentState());
+			redoStates.push_front(currentState);
 
 		auto deserializeItr = states.front().graphData.GetIterator();
 
