@@ -21,8 +21,17 @@ string FW::TimeDurationToString(double time) {
 	return FMT("{:.2f} secs", time);
 }
 
+FW::HASH FW::HashData(const void* ptr, int size) {
+	size_t result = 0;
+	const size_t prime = 31;
+	for (size_t i = 0; i < size; ++i) {
+		result = ((BYTE*)ptr)[i] + (result * prime);
+	}
+	return result;
+}
+
 size_t FW::HashStr(string str) {
-	return std::hash<string>()(str);
+	return HashData(str.c_str(), str.size());
 }
 
 string FW::NumOrdinal(uint64 val) {

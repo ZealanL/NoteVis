@@ -132,7 +132,9 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 namespace FW {
 	string TimeDurationToString(double time);
 
-	size_t HashStr(string str);
+	typedef uint64_t HASH;
+	HASH HashData(const void* ptr, int size);
+	HASH HashStr(string str);
 
 	// Get this number as an ordinal string
 	// E.x. NumOrdinal(1) -> "1st", NumOrdinal(52) -> "52nd", etc.
