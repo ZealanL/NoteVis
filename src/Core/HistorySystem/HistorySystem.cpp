@@ -11,7 +11,7 @@ HistoryState GetCurrentState() {
 
 bool HistorySystem::Update(bool ignoreTime) {
 	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
-	constexpr double MIN_HISTORY_UPDATE_DELAY = 0;
+	constexpr double MIN_HISTORY_UPDATE_DELAY = 3;
 
 	static double lastUpdateTime = 0;
 	if (CURRENT_TIME >= lastUpdateTime + MIN_HISTORY_UPDATE_DELAY || ignoreTime) {
@@ -22,7 +22,6 @@ bool HistorySystem::Update(bool ignoreTime) {
 	}
 
 	auto currentState = GetCurrentState();
-
 	if (!states.empty() && states.front().Matches(currentState))
 		return false; // Prevent storing history when nothing actually changed
 

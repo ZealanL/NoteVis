@@ -6,7 +6,7 @@ struct HistoryState {
 	ByteDataStream graphData;
 
 	bool Matches(HistoryState other) {
-		return this->graphData == other.graphData;
+		return this->graphData.DataMatches(other.graphData);
 	}
 
 	size_t GetSize() {
