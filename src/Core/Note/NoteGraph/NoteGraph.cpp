@@ -548,15 +548,13 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 	{ // Draw notes
 
-// We need to draw notes in order of time, this will contain note pointers but sorted
+		// We need to draw notes in order of time, this will contain note pointers but sorted
 		vector<Note*> notesToDraw;
 
-		// TODO: Sub-optimal check requires function calls
+		// Determine visible notes
+		// TODO: Sub-optimal to parse all notes each frame
 		for (Note* note : *this) {
-			Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), ctx);
-			float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), ctx).x;
-
-			if (screenPos.x > screenMax.x || tailEndX < screenMin.x)
+			if (note->time > graphViewEndTime || note->time + note->duration < graphViewStartTime)
 				continue;
 
 			notesToDraw.push_back(note);
