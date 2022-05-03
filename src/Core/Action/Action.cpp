@@ -5,6 +5,5 @@
 bool Keybind::IsDown() {
 	if (!IsValid())
 		return false;
-
-	return g_KeyboardState[this->key];
+	return g_KeyboardState[SDL_GetScancodeFromKey(this->key)];
 }
