@@ -128,6 +128,15 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 
 #define CURRENT_TIME (ImGui::GetTime())
 
+// Member property that is publicly constant but only modifiable privately
+#define PRIVCONST(type, name, val) \
+private: type _##name = val; \
+public: const type& name = _##name
+
+#define PRIVCONST_ARR(type, name, size, val) \
+private: type _##name[size] = val; \
+public: const type* name = _##name
+
 // Framework functions
 namespace FW {
 	string TimeDurationToString(double time);

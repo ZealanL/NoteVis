@@ -2,6 +2,7 @@
 #include "../NoteTypes.h"
 #include "../../../Types/ByteDataSteam.h"
 #include "../../UI/LogNotif/LogNotif.h"
+#include "../NoteStorageCache/NoteStorageCache.h"
 
 struct GraphPos {
 	NoteTime x;
@@ -14,15 +15,8 @@ struct GraphPos {
 
 // NOTE: Rendering of the NoteGraph is Rendering/NoteGraphRender
 class NoteGraph {
-private:
-	// Private to prevent manual modification, this would cause serious desyncronization issues
-	set<Note*> _notes;
-	NoteTime _furthestNoteEndTime;
-
-	// Keep track of what notes are in what key slot for fast comparisons
-	set<Note*> _noteSlots[KEY_AMOUNT];
 public:
-
+	NoteStorageCache noteCache;
 	LogNotifList logNotifs;
 
 	// Current mode
@@ -59,18 +53,17 @@ public:
 	NoteGraphInputState state;
 
 	NoteTime GetFurthestNoteEndTime() {
-		return _furthestNoteEndTime;
+		return noteCache.GetFurthestNoteEndTime();
 	}
 
 	NoteTime GetGraphEndTime() {
-		return MAX(_furthestNoteEndTime, NOTETIME_PER_BEAT * timeSig.beatCount);
+		return MAX(noteCache.GetFurthestNoteEndTime(), NOTETIME_PER_BEAT * timeSig.beatCount);
 	}
 
 	Note* hoveredNote = NULL;
 
-	set<Note*> selectedNotes; // Only contains pointers already in _notes 
 	bool IsNoteSelected(Note* note) {
-		return selectedNotes.find(note) != selectedNotes.end();
+		return noteCache.selected.count(note);
 	}
 
 	struct TimeSignature {
@@ -110,7 +103,7 @@ public:
 
 	int GetNoteCount();
 	void ClearEverything(bool notify = true);
-	const set<Note*>& GetNotes() { return _notes; }
+	auto GetNotes() { return noteCache.notes; }
 	Note* AddNote(Note note, bool ignoreOverlap = false); // Returns pointer to added note
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
 	void ClearNotes();
@@ -135,11 +128,11 @@ public:
 	int GetNoteBaseHeadSizeScreen(RenderContext* ctx);
 
 	~NoteGraph() {
-		for (Note* note : _notes)
+		for (Note* note : noteCache)
 			delete note;
 	}
 
 	// For C++ iterator
-	auto begin() { return _notes.begin(); }
-	auto end() { return _notes.end(); }
+	auto begin() { return noteCache.begin(); }
+	auto end() { return noteCache.end(); }
 };

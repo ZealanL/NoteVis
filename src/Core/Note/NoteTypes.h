@@ -32,5 +32,18 @@ struct Note {
 			&& velocity > 0		// Velocity is valid
 			&& time >= 0;		// Note time is valid
 	}
+
+	bool Compare(const Note& other) {
+		if (time != other.time)
+			return time < other.time;
+		if (key != other.key)
+			return key < other.key;
+		if (duration != other.duration)
+			return duration < other.duration;
+		if (velocity != other.velocity)
+			return velocity < other.velocity;
+
+		return false; // Exact same
+	}
 };
 #pragma endregion

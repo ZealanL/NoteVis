@@ -30,12 +30,12 @@ void ActionDefineSystem::Init() {
 #pragma region Notes
 	MAKE_ACTION(DeleteSelectedNotes, [] {
 
-		int deletedCount = g_NoteGraph.selectedNotes.size();
-		if (g_NoteGraph.selectedNotes.size() < g_NoteGraph.GetNoteCount()) {
-			while (!g_NoteGraph.selectedNotes.empty())
-				g_NoteGraph.RemoveNote(*g_NoteGraph.selectedNotes.begin());
+		int deletedCount = g_NoteGraph.noteCache.selected.size();
+		if (g_NoteGraph.noteCache.selected.size() < g_NoteGraph.GetNoteCount()) {
+			while (!g_NoteGraph.noteCache.selected.empty())
+				g_NoteGraph.RemoveNote(*g_NoteGraph.noteCache.selected.begin());
 
-			g_NoteGraph.selectedNotes.clear();
+			g_NoteGraph.noteCache.DeselectAll();
 		} else {
 			// We are deleting all notes
 			g_NoteGraph.ClearNotes();
@@ -44,15 +44,13 @@ void ActionDefineSystem::Init() {
 		}, Keybind(SDLK_DELETE), true);
 
 	MAKE_ACTION(SelectAllNotes, [] {
-		if (g_NoteGraph.selectedNotes.size() == g_NoteGraph.GetNoteCount()) {
+		if (g_NoteGraph.noteCache.selected.size() == g_NoteGraph.GetNoteCount()) {
 			// If all notes are already selected, deselect everything
-			g_NoteGraph.selectedNotes.clear();
+			g_NoteGraph.noteCache.DeselectAll();
 			DLOG("Deselected all notes");
 		} else {
-			g_NoteGraph.selectedNotes.clear();
-			for (Note* note : g_NoteGraph) {
-				g_NoteGraph.selectedNotes.insert(note);
-			}
+			for (Note* note : g_NoteGraph)
+				g_NoteGraph.noteCache.SetSelected(note, true);
 
 			DLOG("Selected all notes");
 		}
@@ -64,7 +62,7 @@ void ActionDefineSystem::Init() {
 		// Determine min and max
 		KeyInt lowestKey = KEY_AMOUNT;
 		KeyInt highestKey = 0;
-		for (Note* selected : g_NoteGraph.selectedNotes) {
+		for (Note* selected : g_NoteGraph.noteCache.selected) {
 			lowestKey = MIN(lowestKey, selected->key);
 			highestKey = MAX(highestKey, selected->key);
 		}
@@ -74,14 +72,14 @@ void ActionDefineSystem::Init() {
 		}
 
 		// Invert
-		for (Note* selected : g_NoteGraph.selectedNotes)
+		for (Note* selected : g_NoteGraph.noteCache.selected)
 			g_NoteGraph.MoveNote(selected, selected->time, highestKey - (selected->key - lowestKey), true);
 
 		// Check overlap
-		for (Note* selected : g_NoteGraph.selectedNotes)
+		for (Note* selected : g_NoteGraph.noteCache.selected)
 			g_NoteGraph.CheckFixNoteOverlap(selected);
 
-		NG_NOTIF("Inverted {} notes (key range: {})", g_NoteGraph.selectedNotes.size(), (int)(highestKey - lowestKey));
+		NG_NOTIF("Inverted {} notes (key range: {})", g_NoteGraph.noteCache.selected.size(), (int)(highestKey - lowestKey));
 
 		}, Keybind(SDLK_i), true);
 

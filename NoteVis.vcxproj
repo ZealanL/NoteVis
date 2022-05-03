@@ -184,6 +184,7 @@
     <ClCompile Include="src\Core\Core.cpp" />
     <ClCompile Include="src\Core\HistorySystem\HistorySystem.cpp" />
     <ClCompile Include="src\Core\MIDI\MIDI.cpp" />
+    <ClCompile Include="src\Core\Note\NoteStorageCache\NoteStorageCache.cpp" />
     <ClCompile Include="src\Core\UI\Dialog\Dialog.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.cpp" />
@@ -226,6 +227,7 @@
     <ClInclude Include="src\Core\Action\Defines\ActionDefineSystem.h" />
     <ClInclude Include="src\Core\Core.h" />
     <ClInclude Include="src\Core\MIDI\MIDI.h" />
+    <ClInclude Include="src\Core\Note\NoteStorageCache\NoteStorageCache.h" />
     <ClInclude Include="src\Core\UI\Dialog\Dialog.h" />
     <ClInclude Include="src\Core\Note\MusicTheoryDef.h" />
     <ClInclude Include="src\Core\Note\NoteColors.h" />

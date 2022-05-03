@@ -9,7 +9,7 @@
 bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 
 	// Move by interval
-	if (!selectedNotes.empty() && key >= SDLK_2 && key <= SDLK_9) {
+	if (!noteCache.selected.empty() && key >= SDLK_2 && key <= SDLK_9) {
 		// Number pressed, move selected notes
 		bool duplicate = kbFlags & KBFLAG_CTRL;
 		bool invertDir = kbFlags & KBFLAG_SHIFT;
@@ -24,7 +24,7 @@ bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
 
 		if (duplicate) {
 			vector<Note> notesToAdd;
-			for (auto selected : selectedNotes)
+			for (auto selected : noteCache.selected)
 				notesToAdd.push_back(*selected);
 
 			for (auto note : notesToAdd)
@@ -88,7 +88,7 @@ GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
 }
 
 void NoteGraph::CheckFixNoteOverlap(Note* note) {
-	auto& slot = _noteSlots[note->key];
+	auto& slot = noteCache.slots[note->key];
 	vector<Note*> notesToRemove;
 	for (Note* otherNote : slot) {
 		if (note == otherNote)
@@ -101,8 +101,10 @@ void NoteGraph::CheckFixNoteOverlap(Note* note) {
 
 			notesToRemove.push_back(otherNote);
 		} else {
-			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) // Their tail overlaps us
+			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) {// Their tail overlaps us
 				otherNote->duration = note->time - otherNote->time; // Clamp tail
+				noteCache.OnNoteChanged(otherNote, false);
+			}
 		}
 	}
 
@@ -114,29 +116,17 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 	ASSERT(note->IsValid());
 	IASSERT(newY, KEY_AMOUNT);
 
-	if (newY != note->key) {
-		// Update slots if needed
-		_noteSlots[note->key].erase(note);
-		_noteSlots[newY].insert(note);
-	}
-
 	note->time = newX;
 	note->key = newY;
+
+	noteCache.OnNoteChanged(note, newY != note->key);
 
 	if (!ignoreOverlap)
 		CheckFixNoteOverlap(note);
 }
 
 Note* NoteGraph::AddNote(Note note, bool ignoreOverlap) {
-	ASSERT(note.IsValid());
-
-	Note* newNote = new Note(note);
-	_notes.insert(newNote);
-	_noteSlots[note.key].insert(newNote);
-
-	// Update _furthestNoteEndTime
-	NoteTime endTime = newNote->time + newNote->duration;
-	_furthestNoteEndTime = MAX(_furthestNoteEndTime, endTime);
+	Note* newNote = noteCache.AddNote(note);
 
 	if (!ignoreOverlap)
 		CheckFixNoteOverlap(newNote);
@@ -148,31 +138,16 @@ bool NoteGraph::RemoveNote(Note* note) {
 	if (note == hoveredNote)
 		hoveredNote = NULL;
 
-	selectedNotes.erase(note);
-	_noteSlots[note->key].erase(note);
-	bool found = _notes.erase(note);
-	if (found)
-		delete note;
-	return found;
+	return noteCache.RemoveNote(note);
 }
 
 void NoteGraph::ClearNotes() {
-	for (Note* note : _notes) {
-		delete note;
-	}
-
-	selectedNotes.clear();
-
-	for (auto& slot : _noteSlots)
-		slot.clear();
-
-	_notes.clear();
-
+	noteCache.Reset();
 	hoveredNote = NULL;
 }
 
 int NoteGraph::GetNoteCount() {
-	return _notes.size();
+	return noteCache.notes.size();
 }
 
 void NoteGraph::ClearEverything(bool notify) {
@@ -243,11 +218,13 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		if (currentMode == MODE_ADJUSTNOTEVEL) {
 
 			// Increase/decrease selected note velocities
-			for (auto note : selectedNotes)
+			for (auto note : noteCache.selected) {
 				note->velocity = CLAMP(
-					note->velocity + scrollDelta 
+					note->velocity + scrollDelta
 					* (isShiftDown ? 50 : 10), // Shift to change vel 5x faster
 					1, 255);
+				noteCache.OnNoteChanged(note, false);
+			}
 
 		} else {
 
@@ -307,10 +284,10 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			case MODE_IDLE:
 				if (down) {
 					if (!isShiftDown) // If not holding shift, deselect everything
-						selectedNotes.clear();
+						noteCache.DeselectAll();
 
 					if (hoveredNote && !IsNoteSelected(hoveredNote)) {
-						selectedNotes.insert(hoveredNote);
+						noteCache.SetSelected(hoveredNote, false);
 						state.dragInfo.selectedNoteLastMouseDown = true;
 					}
 
@@ -319,7 +296,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				} else {
 					if (hoveredNote) {
 						if (isShiftDown && IsNoteSelected(hoveredNote) && !state.dragInfo.selectedNoteLastMouseDown)
-							selectedNotes.erase(hoveredNote); // Deselect when holding shift
+							noteCache.SetSelected(hoveredNote, false); // Deselect when holding shift
 					}
 
 					break;
@@ -331,7 +308,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				// Stop selecting/dragging
 				currentMode = MODE_IDLE;
 
-				for (Note* selectedNote : selectedNotes)
+				for (Note* selectedNote : noteCache.selected)
 					CheckFixNoteOverlap(selectedNote);
 
 				break;
@@ -373,12 +350,12 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		KeyInt startKey = roundf(MIN(a.y, b.y)), endKey = roundf(MAX(a.y, b.y));
 
 		if (!isShiftDown)
-			selectedNotes.clear();
+			noteCache.DeselectAll();
 
 		for (Note* note : *this) {
 			if (note->time + note->duration >= startTime && note->time <= endTime) {
 				if (note->key >= startKey && note->key <= endKey) {
-					selectedNotes.insert(note);
+					noteCache.SetSelected(note, true);
 				}
 			}
 		}
@@ -387,14 +364,14 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	Note* dragBaseNote = state.dragInfo.startDragSelectedNote;
 	if (currentMode == MODE_DRAGNOTES) {
 		shouldUpdateHistory = true;
-		if (!selectedNotes.empty() && dragBaseNote) {
+		if (!noteCache.selected.empty() && dragBaseNote) {
 			int timeDelta = mouseGraphPos.x - state.dragInfo.startDragPos.x;
 			int keyDelta = roundf(mouseGraphPos.y - state.dragInfo.startDragPos.y);
 
-			Note* first = *selectedNotes.begin();
+			Note* first = *noteCache.selected.begin();
 			NoteTime minTime = first->time;
 			KeyInt minKey = first->key, maxKey = first->key;
-			for (Note* note : selectedNotes) {
+			for (Note* note : noteCache.selected) {
 				minKey = MIN(note->key, minKey);
 				maxKey = MAX(note->key, maxKey);
 			}
@@ -415,14 +392,15 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		}
 	} else if (currentMode == MODE_DRAGNOTELENGTHS) {
 		shouldUpdateHistory = true;
-		if (!selectedNotes.empty() && dragBaseNote) {
+		if (!noteCache.selected.empty() && dragBaseNote) {
 			// Drag-moving selected notes' lengths
 
 			NoteTime minDuration = MAX(1, snappingTime);
 			NoteTime dragTimeDelta = ISNAP(mouseGraphPos.x - (dragBaseNote->time + dragBaseNote->duration), snappingTime);
 
-			for (auto note : selectedNotes) {
+			for (auto note : noteCache.selected) {
 				note->duration = MAX(note->duration + dragTimeDelta, minDuration);
+				noteCache.OnNoteChanged(note, false);
 			}
 		}
 	}
@@ -433,7 +411,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap) {
 	// Check
-	for (Note* note : selectedNotes) {
+	for (Note* note : noteCache.selected) {
 		if (note->time + amountX < 0)
 			return false; // Horizontal limit reached
 
@@ -443,13 +421,13 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverla
 	}
 
 	// Move
-	for (Note* note : selectedNotes)
+	for (Note* note : noteCache.selected)
 		MoveNote(note, note->time + amountX, note->key + amountY, true);
 
 
 	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
 	if (!ignoreOverlap)
-		for (Note* note : selectedNotes)
+		for (Note* note : noteCache.selected)
 			CheckFixNoteOverlap(note);
 
 	return true;
@@ -458,23 +436,14 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverla
 void NoteGraph::Serialize(ByteDataStream& bytesOut) {
 	bytesOut.reserve(GetNoteCount() * sizeof(Note));
 
-	vector<ByteDataStream> noteByteDatas;
-	for (Note* note : _notes) {
+	for (Note* note : noteCache.sortedByStartTime) {
 		ByteDataStream byteData;
-		byteData.WriteAsBytes(note->key);
-		byteData.WriteAsBytes(note->time);
-		byteData.WriteAsBytes(note->duration);
-		byteData.WriteAsBytes(note->velocity);
-		byteData.WriteAsBytes(IsNoteSelected(note));
-		noteByteDatas.push_back(byteData);
+		bytesOut.WriteAsBytes(note->key);
+		bytesOut.WriteAsBytes(note->time);
+		bytesOut.WriteAsBytes(note->duration);
+		bytesOut.WriteAsBytes(note->velocity);
+		bytesOut.WriteAsBytes(IsNoteSelected(note));
 	}
-
-	// Prevent the noteByteDatas from being ordered by memory addresses 
-	//	(otherwise two identical notegraphs notes could serialize in a different order)
-	std::sort(noteByteDatas.begin(), noteByteDatas.end());
-
-	for (auto& noteByteData : noteByteDatas)
-		bytesOut.insert(bytesOut.end(), noteByteData.begin(), noteByteData.end());
 }
 
 void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
@@ -487,10 +456,9 @@ void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
 		bytesIn.Read(&newNote.velocity);
 		Note* note = AddNote(newNote);
 
-		bool selected;
-		bytesIn.Read(&selected);
+		bool selected; bytesIn.Read(&selected);
 		if (selected)
-			selectedNotes.insert(note);
+			noteCache.SetSelected(note, true);
 	}
 }
 
@@ -580,7 +548,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 			dimNonSelected = true;
 			break;
 		default:
-			dimNonSelected = !selectedNotes.empty();
+			dimNonSelected = !noteCache.selected.empty();
 		}
 
 		for (Note* note : notesToDraw) {
