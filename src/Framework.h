@@ -1,10 +1,10 @@
 #pragma once
 
-// Base defines - should be changed
+// Base defines - should be changed accordingly
 #define PROGRAM_NAME	"NoteVis"
 #define PROGRAM_VERSION "v1.0"
-#define DEFAULT_WINDOWSIZE_X 720
-#define DEFAULT_WINDOWSIZE_Y 480
+#define DEFAULT_WINDOWSIZE_X 1280
+#define DEFAULT_WINDOWSIZE_Y 720
 
 #pragma region STD Includes
 #define _HAS_STD_BYTE false
