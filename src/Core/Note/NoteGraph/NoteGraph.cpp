@@ -230,42 +230,59 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 		}
 	}
 
+	// Pick between idle or notevel adjust depending on keybinds
+	if (currentMode == MODE_IDLE || currentMode == MODE_ADJUSTNOTEVEL)
+		currentMode = g_Actions.ha_ChangeNoteVels->IsActive() ? MODE_ADJUSTNOTEVEL : MODE_IDLE;
+		
+
 	// Scroll graph
 	if (e.type == SDL_MOUSEWHEEL) {
 		shouldUpdateHistory = true;
 		int scrollDelta = e.wheel.y;
 
-		// scroll = move graph horizontally
-		//	+ control = zoom in/out horizontally
-		// scroll + alt = move graph vertically
-		//	+ control + alt = zoom in/out vertically
+		if (currentMode == MODE_ADJUSTNOTEVEL) {
 
-		// if shift is down, scroll/move faster
+			// Increase/decrease selected note velocities
+			for (auto note : selectedNotes)
+				note->velocity = CLAMP(
+					note->velocity + scrollDelta 
+					* (isShiftDown ? 50 : 10), // Shift to change vel 5x faster
+					1, 255);
 
-		bool horizontal = !isAltDown;
-
-		if (horizontal) {
-			if (isControlDown) {
-				// Horizontal zoom
-				hZoom *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
-				hZoom = CLAMP(hZoom, 20, 2000);
-			} else {
-				// Horizontal scroll
-				hScroll += -scrollDelta * (isShiftDown ? 5000 : 500) / (hZoom / 100);
-				hScroll = CLAMP(hScroll, 0, GetGraphEndTime());
-			}
 		} else {
-			// TODO: Vertical scrolling maybe?
-			/*
-			if (isControlDown) {
-				// Vertical zoom
-				vScale *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
-				vScale = CLAMP(vScale, 1, 20);
-			} else {
-				// Vertical scroll
 
+			// scroll = move graph horizontally
+			//	+ control = zoom in/out horizontally
+			// scroll + alt = move graph vertically
+			//	+ control + alt = zoom in/out vertically
+
+			// if shift is down, scroll/move faster
+
+			bool horizontal = !isAltDown;
+
+			if (horizontal) {
+				if (isControlDown) {
+					// Horizontal zoom
+					hZoom *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
+					hZoom = CLAMP(hZoom, 20, 2000);
+				} else {
+					// Horizontal scroll
+					hScroll += -scrollDelta * (isShiftDown ? 5000 : 500) / (hZoom / 100);
+					hScroll = CLAMP(hScroll, 0, GetGraphEndTime());
+				}
+			} else {
+				// TODO: Vertical scrolling maybe?
+				/*
+				if (isControlDown) {
+					// Vertical zoom
+					vScale *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
+					vScale = CLAMP(vScale, 1, 20);
+				} else {
+					// Vertical scroll
+
+				}
+				*/
 			}
-			*/
 		}
 	}
 
@@ -552,7 +569,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 		);
 
 		float noteHeadSize_half = floorf(noteSize / 2);
-		float noteHeadHollowSize_half = noteSize / 3;
+		float noteHeadHollowSize_half = roundf(noteSize / 3);
 		float noteTailGap = MAX(1.f, roundf(noteSize / 6.f));
 
 		bool dimNonSelected;
@@ -587,6 +604,9 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 			Vec headCenterPos = screenPos + Vec(noteHeadSize_half * headScale, 0);
 
+			// Keep things pixel-perfect
+			headCenterPos = headCenterPos.Rounded();
+
 			Area headArea = { headCenterPos - noteHeadSize_half * headScale, headCenterPos + noteHeadSize_half * headScale };
 			Area tailArea = { headCenterPos - Vec(0, noteTailGap), Vec(tailEndX, headCenterPos.y + noteTailGap) };
 			tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
@@ -597,10 +617,12 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 				if (currentMode == MODE_ADJUSTNOTEVEL) {
 					// Show velocity below head
-					int textAlpha = (note->velocity / (200.f / 255.f)) + 50;
-					string velStr = std::to_string(note->velocity);
+					int textAlpha = 50 + velocityRatio * 155;
 
-					Draw::Text(velStr, headArea.Bottom(), Color(255, 255, 255, textAlpha), Vec(0.5, -0.5f), textAlpha);
+					// Percentage of velocity from 1-100 (no percent sign shown)
+					int percentage = MAX((int)(note->velocity / (255.f/100.f)), 1);
+
+					Draw::Text(std::to_string(percentage), headArea.Bottom(), Color(255, 255, 255, textAlpha), Vec(0.5, -0.5f), textAlpha);
 				} else {
 					if (currentMode == MODE_DRAGNOTELENGTHS) {
 						// Only outline end of tail
@@ -631,16 +653,18 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 			if (tailArea.min.x < tailArea.max.x)
 				Draw::Rect(tailArea, tailCol);
 
-			// Really loud notes begin to have a halo around their head
+			// Really loud notes begin to have a halo/glow around their head
 			constexpr int HALO_THRESHOLD = 100;
-			int haloWidth = (MAX(0, note->velocity - HALO_THRESHOLD) / (255.f - HALO_THRESHOLD)) * noteHeadSize_half;
+			int haloWidth = (MAX(0, note->velocity - HALO_THRESHOLD) / (255.f - HALO_THRESHOLD)) * noteHeadSize_half * 0.75f;
 			if (haloWidth > 0) {
 				Draw::Rect(headArea.Expand(haloWidth), Color(col.r, col.g, col.b, 50));
 			}
 
 			// Hollow note head if black key
-			if (note->IsBlackKey())
-				Draw::Rect(headCenterPos - noteHeadHollowSize_half, headCenterPos + noteHeadHollowSize_half, COL_BLACK);
+			if (note->IsBlackKey()) {
+				int holeSize = noteHeadHollowSize_half * headScale;
+				Draw::Rect(headCenterPos - holeSize, headCenterPos + holeSize, COL_BLACK);
+			}
 		}
 	}
 
