@@ -352,14 +352,15 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	if (isDragging) {
 		shouldUpdateHistory = true;
-		if (isControlDown) {
-			// Start rect selection
+		if (state.dragInfo.startDragSelectedNote) {
+			if (g_MousePos.Distance(state.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX) {
+				// Standard selection
+				// Also possible drag
+				currentMode = isAltDown ? MODE_DRAGNOTELENGTHS : MODE_DRAGNOTES;
+			}
+		} else {
+			// Started dragging in a blank area, start rect selection
 			currentMode = MODE_RECTSELECT;
-		} else if (state.dragInfo.startDragSelectedNote
-			&& (g_MousePos.Distance(state.dragInfo.startDragMousePos) >= MIN_MOUSE_DRAG_DIST_PX)) {
-			// Standard selection
-			// Also possible drag
-			currentMode = isAltDown ? MODE_DRAGNOTELENGTHS : MODE_DRAGNOTES;
 		}
 	}
 
