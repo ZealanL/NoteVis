@@ -60,6 +60,7 @@ int _main(vector<string> args) {
 
 	DLOG("Starting " PROGRAM_NAME " " PROGRAM_VERSION ", number of command line args: {}", args.size());
 	for (auto arg : args) {
+		// TODO: Messy
 		size_t spacePos = arg.find(' ');
 		if (spacePos == string::npos)
 			spacePos = arg.size();
@@ -79,6 +80,11 @@ int _main(vector<string> args) {
 			}
 
 			break;
+		}
+
+		if (argName == "-dev") {
+			g_ARG_DevMode = true;
+			DLOG("Running in DEV MODE!");
 		}
 
 		ERROR("Ignoring unknown command line argument \"{}\"", arg);

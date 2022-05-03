@@ -16,9 +16,13 @@
 
 #pragma region Global Variables
 
-// COMMAND LINE ARGUMENT
+#pragma region Command Line Args
 // Maximum undo history memory size, in megabytes
 GBLVAR_V(int, ARG_MaxHistoryMemSize, 100);
+
+// Developer mode
+GBLVAR_V(bool, ARG_DevMode, false);
+#pragma endregion
 
 GBLVAR(SDL_Renderer*,	SDL_Renderer);
 GBLVAR(SDL_Window*,		SDL_Window);
