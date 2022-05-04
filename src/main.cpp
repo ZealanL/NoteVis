@@ -67,6 +67,7 @@ int _main(vector<string> args) {
 
 		string argName = arg.substr(0, spacePos);
 		string argVal = arg.substr(spacePos);
+
 		if (argName == "-maxhistorymem") {
 			try {
 				int amount = std::stoi(argVal, NULL, NULL);
@@ -85,6 +86,7 @@ int _main(vector<string> args) {
 		if (argName == "-dev") {
 			g_ARG_DevMode = true;
 			DLOG("Running in DEV MODE!");
+			break;
 		}
 
 		ERROR("Ignoring unknown command line argument \"{}\"", arg);

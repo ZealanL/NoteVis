@@ -9,20 +9,6 @@ public:
 	NoteStorageCache() {}
 	NoteStorageCache(const NoteStorageCache& other) = default;
 
-	NoteStorageCache& operator=(const NoteStorageCache& other) {
-		this->_notes = other._notes;
-
-		for (int i = 0; i < KEY_AMOUNT; i++)
-			this->_slots[i] = other._slots[i];
-
-		this->_selected = other._selected;
-
-		this->_sortedByStartTime = other.sortedByStartTime;
-		this->_sortedByEndTime = other._sortedByEndTime;
-
-		return *this;
-	}
-	
 private:
 	// Datastructure syncronization helpers
 	void OnNoteAdded(Note* note);
@@ -59,7 +45,18 @@ public:
 	Note* AddNote(Note note);
 	bool RemoveNote(Note* note); // Returns false if not found
 
-	void Reset() { *this = NoteStorageCache(); }
+	void Reset() { 
+		// Free memory
+		for (Note* note : _notes)
+			delete note;
+		_notes.clear();
+
+		_selected.clear();
+		_sortedByEndTime.clear();
+		_sortedByStartTime.clear();
+		for (auto& slot : _slots)
+			slot.clear();
+	}
 
 	// For C++ iterator
 	auto begin() const { return notes.begin(); }
@@ -69,5 +66,6 @@ public:
 		// Free memory
 		for (Note* note : _notes)
 			delete note;
+		_notes.clear();
 	}
 };

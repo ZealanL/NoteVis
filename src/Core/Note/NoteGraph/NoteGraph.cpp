@@ -287,7 +287,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 						noteCache.DeselectAll();
 
 					if (hoveredNote && !IsNoteSelected(hoveredNote)) {
-						noteCache.SetSelected(hoveredNote, false);
+						noteCache.SetSelected(hoveredNote, true);
 						state.dragInfo.selectedNoteLastMouseDown = true;
 					}
 
@@ -421,8 +421,9 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverla
 	}
 
 	// Move
-	for (Note* note : noteCache.selected)
+	for (Note* note : noteCache.selected) {
 		MoveNote(note, note->time + amountX, note->key + amountY, true);
+	}
 
 
 	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)

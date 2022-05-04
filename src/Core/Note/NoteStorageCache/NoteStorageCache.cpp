@@ -40,8 +40,14 @@ void NoteStorageCache::OnNoteChanged(Note* note, bool potentialKeyChange) {
 		ASSERT(timesErased == 1);
 	}
 
-	OnNoteDeleted(note);
-	OnNoteAdded(note);
+	if (potentialKeyChange) {
+		_slots[note->key].insert(note);
+	}
+
+	_sortedByEndTime.erase(note);
+	_sortedByStartTime.erase(note);
+	_sortedByEndTime.insert(note);
+	_sortedByStartTime.insert(note);
 }
 
 void NoteStorageCache::SetSelected(Note* note, bool isSelected) {

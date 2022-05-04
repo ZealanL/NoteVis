@@ -127,11 +127,6 @@ public:
 	// Base size for each note's head, in screen pixels
 	int GetNoteBaseHeadSizeScreen(RenderContext* ctx);
 
-	~NoteGraph() {
-		for (Note* note : noteCache)
-			delete note;
-	}
-
 	// For C++ iterator
 	auto begin() { return noteCache.begin(); }
 	auto end() { return noteCache.end(); }
