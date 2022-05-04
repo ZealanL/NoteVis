@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "../Core/Core.h"
+#include "Draw/Draw.h"
 
 // Draw list to be used for draw functions
 ImDrawList* targetDrawList = NULL;
@@ -65,6 +66,23 @@ void Renderer::BeginFrame() {
 }
 
 void Renderer::EndFrame() {
+	if (g_ARG_DevMode) {
+		// Show FPS
+		{
+			static int fps = 0;
+			static int framesRendered = 0;
+			static float lastTime = CURRENT_TIME;
+			if (CURRENT_TIME >= lastTime + 1) {
+				fps = framesRendered;
+				framesRendered = 0;
+				lastTime = CURRENT_TIME;
+			}
+
+			framesRendered++;
+			Draw::Text(std::format("{} fps", fps), Vec(GetWindowSize().x - 8, 8), COL_WHITE, Vec(1, 0), 100);
+		}
+	}
+
 	Vec windowSize = GetWindowSize();
 	glViewport(0, 0, windowSize.x, windowSize.y);
 	glClearColor(0.1f, 0.1f, 0.1f, 1);
