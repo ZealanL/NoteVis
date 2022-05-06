@@ -7,7 +7,6 @@ private:
 public:
 	double time;
 	ByteDataStream graphData;
-	
 
 	HistoryState(ByteDataStream graphData, double time = CURRENT_TIME) {
 		this->time = CURRENT_TIME;
