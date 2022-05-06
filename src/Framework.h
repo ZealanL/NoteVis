@@ -73,15 +73,14 @@ typedef BYTE uint8_t;
 
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #ifndef PLAT_WINDOWS
-#error PLAT_WINDOWS should be defined for Windows builds
-#endif
-#endif
-
-#ifdef PLAT_WINDOWS
-#ifdef _WIN64
-#define IS_64BIT
+#error PLAT_WINDOWS should be predefined for Windows builds
 #endif
 #else
+#error PLAT_WINDOWS should only be predefined for Windows builds
+#endif
+
+#if defined(_WIN64)
+#define IS_64BIT
 #endif
 
 #ifdef IS_64BIT
@@ -90,10 +89,9 @@ typedef BYTE uint8_t;
 #define ARCH_LABEL "x86"
 #endif
 
-#define EXIT(code) exit(code)
-
 #define EXITCODE_BAD 0
 #define EXITCODE_GOOD 1
+#define EXIT(code) exit(code)
 
 #ifdef PLAT_WINDOWS
 #include <windows.h>
