@@ -10,8 +10,6 @@ HistoryState GetCurrentState() {
 }
 
 bool HistorySystem::Update(bool ignoreTime) {
-	auto currentState = GetCurrentState();
-
 	// Minimum amount of time between history updates, this will "merge" multiple history changes into one if they happen quickly
 	constexpr double MIN_HISTORY_UPDATE_DELAY = 2;
 	static double lastUpdateTime = -DBL_MAX;
@@ -21,6 +19,8 @@ bool HistorySystem::Update(bool ignoreTime) {
 		// Hasn't been long enough, 
 		return false;
 	}
+
+	auto currentState = GetCurrentState();
 
 	if (!states.empty() && states.front().Matches(currentState))
 		return false; // No change
