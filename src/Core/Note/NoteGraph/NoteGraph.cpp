@@ -489,20 +489,12 @@ int NoteGraph::GetNoteBaseHeadSizeScreen(RenderContext* ctx) {
 
 void NoteGraph::UpdatePlayOnRender() {
 
-	// TODO: This is lazy, thread-unsafe, and very not-ideal
-	static vector<KeyInt> keysToOffNextFrame;
-
 	double timeSpentPlaying = CURRENT_TIME - state.playInfo.playStartTime;
 	NoteTime nextCurTime = state.playInfo.startGraphTime + timeSpentPlaying * NOTETIME_PER_BEAT * 2;
-
-	// Backup
-	auto keysToOffThisFrame = keysToOffNextFrame;
 
 	bool playedKeys[KEY_AMOUNT] {}; // Make sure we don't turn on and off a key in the same frame
 	for (auto note : noteCache.sortedByStartTime) {
 		ASSERT(note->IsValid());
-
-		bool playedThisNote = false;
 
 		if (note->time >= state.playInfo.curGraphTime 
 			&& note->time < nextCurTime) {
@@ -510,29 +502,16 @@ void NoteGraph::UpdatePlayOnRender() {
 			// We passed a note start, play the note
 			g_MIDIPlayer.NoteOn(note->key, note->velocity);
 			playedKeys[note->key] = true;
-			playedThisNote = true;
 		}
 
 		if (!playedKeys[note->key]) {
 			if (note->time + note->duration >= state.playInfo.curGraphTime
 				&& note->time + note->duration < nextCurTime) {
-				// We passed a note end, stop the note
-				if (playedThisNote) {
-					// We can't stop it on the same tick it starts, so wait till next frame
-					keysToOffNextFrame.push_back(note->key);
-				} else {
+				
 					g_MIDIPlayer.NoteOff(note->key);
-				}
 			}
 		}
 	}
-
-	// Reset keys from last frame
-	for (KeyInt key : keysToOffThisFrame) {
-		if (!playedKeys)
-			g_MIDIPlayer.NoteOff(key);
-	}
-	keysToOffNextFrame.clear();
 
 	state.playInfo.curGraphTime = nextCurTime;
 	hScroll = state.playInfo.curGraphTime;
