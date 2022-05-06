@@ -76,7 +76,7 @@ GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
 
 	screenPos -= noteAreaScreen.Center();
 
-	NoteTime x = hScroll + (NoteTime)((1000.f * screenPos.x) / hZoom);
+	NoteTime x = hScroll + (NoteTime)((NOTETIME_PER_BEAT * screenPos.x) / hZoom);
 
 	float height = noteAreaScreen.Height() * vScale;
 
@@ -101,7 +101,8 @@ void NoteGraph::CheckFixNoteOverlap(Note* note) {
 
 			notesToRemove.push_back(otherNote);
 		} else {
-			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) {// Their tail overlaps us
+			if (otherNote->time < note->time && otherNote->time + otherNote->duration > note->time) // Their tail overlaps us
+			{ 
 				otherNote->duration = note->time - otherNote->time; // Clamp tail
 				noteCache.OnNoteChanged(otherNote, false);
 			}
@@ -188,18 +189,15 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	{ // Update hoveredNote
 		if (currentMode == MODE_IDLE) {
 			if (mouseMoved) {
+
+				// How much distance from note-end to mouse will still count as "hovered"
+				// TODO: This should not do manual screensize-to-graphsize calculations, make a helper function
+				NoteTime extraNoteHoverPad = (GetNoteBaseHeadSizeScreen(ctx) * NOTETIME_PER_BEAT) / hZoom;
+
 				hoveredNote = NULL;
 				for (Note* note : *this) {
-
-					int screenNoteStartTime = ToScreenPos({ note->time, (float)note->key }, ctx).x;
-					int screenNoteEndTime =
-						MAX(
-							ToScreenPos({ note->time + note->duration, (float)note->key }, ctx).x,
-							screenNoteStartTime + (GetNoteBaseHeadSizeScreen(ctx) * 2)
-						);
-
 					if (
-						(g_MousePos.x >= screenNoteStartTime && g_MousePos.x < screenNoteEndTime) // X is overlapping
+						(mouseGraphPos.x >= note->time && mouseGraphPos.x < note->time + note->duration + extraNoteHoverPad) // X is overlapping
 						&& (mouseGraphKey == note->key) // Y is overlapping
 						) {
 
