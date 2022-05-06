@@ -58,30 +58,24 @@ void Renderer::Shutdown() {
 }
 
 void Renderer::BeginFrame() {
+	devRenderStats.lastBeginFrameTime = CURRENT_TIME;
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
-
 	targetDrawList = ImGui::GetBackgroundDrawList();
+
+	devRenderStats.lastBeginDrawTime = CURRENT_TIME;
 }
 
 void Renderer::EndFrame() {
-	if (g_ARG_DevMode) {
-		// Show FPS
-		{
-			static int fps = 0;
-			static int framesRendered = 0;
-			static float lastTime = CURRENT_TIME;
-			if (CURRENT_TIME >= lastTime + 1) {
-				fps = framesRendered;
-				framesRendered = 0;
-				lastTime = CURRENT_TIME;
-			}
-
-			framesRendered++;
-			Draw::Text(std::format("{} fps", fps), Vec(GetWindowSize().x - 8, 8), COL_WHITE, Vec(1, 0), 100);
-		}
+	if (g_ARG_DevMode) { // Show render stats
+		Draw::Text(
+			std::format("{} fps\n{}", devRenderStats.fps, FW::TimeDurationToString(devRenderStats.averageDrawTimePerFrame)),
+			Vec(GetWindowSize().x - 8, 8), COL_WHITE, Vec(1, 0), 100
+		);
 	}
+
+	devRenderStats.lastEndDrawTime = CURRENT_TIME;
 
 	Vec windowSize = GetWindowSize();
 	glViewport(0, 0, windowSize.x, windowSize.y);
@@ -89,9 +83,24 @@ void Renderer::EndFrame() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	ImGui::Render();
-
+	
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	SDL_GL_SwapWindow(g_SDL_Window);
+
+	devRenderStats.lastEndFrameTime = CURRENT_TIME;
+	{ // Update stats
+		devRenderStats.curFramesRendered++;
+		devRenderStats.timeSpendDrawing += devRenderStats.lastEndDrawTime - devRenderStats.lastBeginDrawTime;
+		if (floor(devRenderStats.lastEndFrameTime) > floor(devRenderStats.lastBeginFrameTime)) {
+			// A second has passed
+			devRenderStats.fps = devRenderStats.curFramesRendered;
+			devRenderStats.averageDrawTimePerFrame = devRenderStats.timeSpendDrawing / (double)devRenderStats.fps;
+
+			// Reset
+			devRenderStats.timeSpendDrawing = 0;
+			devRenderStats.curFramesRendered = 0;
+		}
+	}
 }
 
 Vec Renderer::GetWindowSize() {

@@ -25,6 +25,7 @@
 #include <unordered_map>
 #include <list>
 #include <iomanip>
+#include <chrono>
 
 // Remove need for std namespace scope for very common datatypes
 using std::vector;
@@ -126,7 +127,7 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 // For scoped enums that shouldn't be classes
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
 
-#define CURRENT_TIME (ImGui::GetTime())
+#define CURRENT_TIME (FW::GetCurTime())
 
 // Member property that is publicly constant but only modifiable privately
 #define PRIVCONST(type, name, val) \
@@ -139,6 +140,8 @@ public: const type* name = _##name
 
 // Framework functions
 namespace FW {
+	double GetCurTime();
+
 	string TimeDurationToString(double time);
 
 	typedef uint64_t HASH;

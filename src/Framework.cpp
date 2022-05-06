@@ -1,5 +1,14 @@
 #include "Framework.h"
 
+auto startTime = std::chrono::system_clock::now();
+double FW::GetCurTime() {
+	using namespace std::chrono;
+	auto timeSinceStartup = system_clock::now() - startTime;
+
+	double microsecs = duration_cast<microseconds>(timeSinceStartup).count();
+    return microsecs / (1000.0 * 1000.0);
+}
+
 string FW::TimeDurationToString(double time) {
 	double mins = time / 60;
 	double hours = mins / 60;
@@ -18,7 +27,10 @@ string FW::TimeDurationToString(double time) {
 	if (mins > 1)
 		return FMT("{:.2f} mins", mins);
 
-	return FMT("{:.2f} secs", time);
+	if (time > 0.1)
+		return FMT("{:.2f} secs", time);
+	
+	return FMT("{:.2f} ms", time*1000.0);
 }
 
 FW::HASH FW::HashData(const void* ptr, int size) {
