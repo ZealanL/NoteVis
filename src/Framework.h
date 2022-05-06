@@ -72,7 +72,9 @@ typedef BYTE uint8_t;
 #define FMT(s, ...) std::format(s, ##__VA_ARGS__)
 
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define PLAT_WINDOWS
+#ifndef PLAT_WINDOWS
+#error PLAT_WINDOWS should be defined for Windows builds
+#endif
 #endif
 
 #ifdef PLAT_WINDOWS
