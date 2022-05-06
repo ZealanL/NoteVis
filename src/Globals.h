@@ -6,6 +6,7 @@
 #include "Core/HistorySystem/HistorySystem.h"
 #include "Core/Action/Defines/ActionDefineSystem.h"
 #include "Core/Note/NoteGraph/NoteGraph.h"
+#include "Core/MIDI/MIDIPlayer/MIDIPlayer.h"
 
 #include "Core/UI/Dialog/Dialog.h"
 
@@ -31,16 +32,14 @@ GBLVAR(SDL_GLContext,	SDL_GLContext);
 GBLVAR(Vec, MousePos);
 GBLVAR(ActionDefineSystem, Actions);
 
-// TODO: Make proper history system interface (?)
 GBLVAR(HistorySystem, History)
+
+GBLVAR(MIDIPlayer, MIDIPlayer);
 
 GBLVAR(NoteGraph, NoteGraph);
 
 GBLVAR(bool, KeyboardState[SDL_NUM_SCANCODES], {});
 GBLVAR(bool, MouseState[6], {});
-
-#pragma region Global Hold Actions
-#pragma endregion
 
 #pragma endregion
 #undef GBLVAR

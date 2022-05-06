@@ -95,6 +95,7 @@ typedef BYTE uint8_t;
 
 #ifdef PLAT_WINDOWS
 #include <windows.h>
+
 // Show an error
 #define ERROR(s, ...) { MessageBoxA(0, ("ERROR: " + FMT(s, ##__VA_ARGS__)).c_str(), PROGRAM_NAME " Error", MB_ICONERROR); }
 // Show an error and close

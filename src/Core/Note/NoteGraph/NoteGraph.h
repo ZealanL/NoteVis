@@ -45,8 +45,9 @@ public:
 		} dragInfo;
 
 		struct {
-			NoteTime startTime;
-			NoteTime curTime;
+			double playStartTime;
+			NoteTime startGraphTime;
+			NoteTime curGraphTime;
 		} playInfo;
 		
 	};
@@ -101,6 +102,8 @@ public:
 	// ignoreOverlap: Don't call CheckFixNoteOverlap after moving
 	void MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOverlap = false);
 
+	void TogglePlay();
+
 	int GetNoteCount();
 	void ClearEverything(bool notify = true);
 	auto GetNotes() { return noteCache.notes; }
@@ -126,6 +129,8 @@ public:
 
 	// Base size for each note's head, in screen pixels
 	int GetNoteBaseHeadSizeScreen(RenderContext* ctx);
+
+    void UpdatePlayOnRender();
 
 	// For C++ iterator
 	auto begin() { return noteCache.begin(); }

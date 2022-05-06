@@ -1,4 +1,5 @@
 #include "MIDI.h"
+#include "MIDIPlayer\MIDIPlayer.h"
 using namespace libremidi;
 
 bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut) {

@@ -27,6 +27,10 @@ void ActionDefineSystem::Init() {
 		g_History.Redo();
 		}, Keybind(SDLK_y, KBFLAG_CTRL), false);
 
+	MAKE_ACTION(Play, [] {
+		g_NoteGraph.TogglePlay();
+	}, Keybind(SDLK_SPACE), false);
+
 #pragma region Notes
 	MAKE_ACTION(DeleteSelectedNotes, [] {
 

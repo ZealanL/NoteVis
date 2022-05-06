@@ -125,6 +125,17 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 		CheckFixNoteOverlap(note);
 }
 
+void NoteGraph::TogglePlay() {
+	if (currentMode == MODE_PLAY) {
+		currentMode = MODE_IDLE;
+		g_MIDIPlayer.StopAll();
+	} else {
+		currentMode = MODE_PLAY;
+		state.playInfo.playStartTime = CURRENT_TIME;
+		DLOG("Playing from t={}", state.playInfo.startGraphTime);
+	}
+}
+
 Note* NoteGraph::AddNote(Note note, bool ignoreOverlap) {
 	Note* newNote = noteCache.AddNote(note);
 
@@ -318,9 +329,19 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			// Right click
 
 			if (down) {
+
 				// Move playhead
-				state.playInfo.startTime = CLAMP(mouseGraphPos.x, 0, GetGraphEndTime());
-				state.playInfo.startTime = ISNAP(state.playInfo.startTime, snappingTime);			
+				state.playInfo.startGraphTime = CLAMP(mouseGraphPos.x, 0, GetGraphEndTime());
+				state.playInfo.startGraphTime = ISNAP(state.playInfo.startGraphTime, snappingTime);
+				state.playInfo.curGraphTime = state.playInfo.startGraphTime;
+
+				if (currentMode == MODE_PLAY) {
+					// Prevent playing notes inbetween
+					state.playInfo.playStartTime = CURRENT_TIME;
+
+					// Prevent notes currently being played from getting stuck on
+					g_MIDIPlayer.StopAll();
+				}
 			}
 		}
 	}
@@ -468,7 +489,62 @@ int NoteGraph::GetNoteBaseHeadSizeScreen(RenderContext* ctx) {
 	return floorf((GetNoteAreaScreen(ctx).Height() * vScale) / KEY_AMOUNT * NOTEHEAD_SIZE_SCALE);
 }
 
+void NoteGraph::UpdatePlayOnRender() {
+
+	// TODO: This is lazy, thread-unsafe, and very not-ideal
+	static vector<KeyInt> keysToOffNextFrame;
+
+	double timeSpentPlaying = CURRENT_TIME - state.playInfo.playStartTime;
+	NoteTime nextCurTime = state.playInfo.startGraphTime + timeSpentPlaying * NOTETIME_PER_BEAT * 2;
+
+	// Backup
+	auto keysToOffThisFrame = keysToOffNextFrame;
+
+	bool playedKeys[KEY_AMOUNT] {}; // Make sure we don't turn on and off a key in the same frame
+	for (auto note : noteCache.sortedByStartTime) {
+		ASSERT(note->IsValid());
+
+		bool playedThisNote = false;
+
+		if (note->time >= state.playInfo.curGraphTime 
+			&& note->time < nextCurTime) {
+			
+			// We passed a note start, play the note
+			g_MIDIPlayer.NoteOn(note->key, note->velocity);
+			playedKeys[note->key] = true;
+			playedThisNote = true;
+		}
+
+		if (!playedKeys[note->key]) {
+			if (note->time + note->duration >= state.playInfo.curGraphTime
+				&& note->time + note->duration < nextCurTime) {
+				// We passed a note end, stop the note
+				if (playedThisNote) {
+					// We can't stop it on the same tick it starts, so wait till next frame
+					keysToOffNextFrame.push_back(note->key);
+				} else {
+					g_MIDIPlayer.NoteOff(note->key);
+				}
+			}
+		}
+	}
+
+	// Reset keys from last frame
+	for (KeyInt key : keysToOffThisFrame) {
+		if (!playedKeys)
+			g_MIDIPlayer.NoteOff(key);
+	}
+	keysToOffNextFrame.clear();
+
+	state.playInfo.curGraphTime = nextCurTime;
+	hScroll = state.playInfo.curGraphTime;
+}
+
 void NoteGraph::RenderNotes(RenderContext* ctx) {
+
+	if (currentMode == MODE_PLAY)
+		UpdatePlayOnRender();
+
 	Area noteAreaScreen = GetNoteAreaScreen(ctx);
 	Vec screenMin = noteAreaScreen.min, screenMax = noteAreaScreen.max;
 
@@ -553,7 +629,10 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 		}
 
 		for (Note* note : notesToDraw) {
-			bool selected = IsNoteSelected(note);
+			bool isSelected = IsNoteSelected(note);
+			bool isBeingPlayed = currentMode == MODE_PLAY &&
+				(note->time <= state.playInfo.curGraphTime 
+					&& note->time + note->duration >= state.playInfo.curGraphTime);
 
 			Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), ctx);
 			float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), ctx).x;
@@ -572,6 +651,10 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 			Vec headCenterPos = screenPos + Vec(noteHeadSize_half * headScale, 0);
 
+			if (isBeingPlayed) {
+				headScale *= 1.5f;
+			}
+
 			// Keep things pixel-perfect
 			headCenterPos = headCenterPos.Rounded();
 
@@ -579,8 +662,8 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 			Area tailArea = { headCenterPos - Vec(0, noteTailGap), Vec(tailEndX, headCenterPos.y + noteTailGap) };
 			tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
 
-			if (selected) {
-				// Selected notes are outlined with white
+			if (isSelected) {
+				// Selected notes are outlined with white on the outside
 				Draw::Rect(headArea.Expand(2), COL_WHITE);
 
 				if (currentMode == MODE_ADJUSTNOTEVEL) {
@@ -602,8 +685,9 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 				}
 
 			} else {
-				if (dimNonSelected)
+				if (dimNonSelected) {
 					col = col.RatioBrighten(0.35f);
+				}
 			}
 
 			// Brighten hovered notes
@@ -611,8 +695,8 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 				col = col.RatioBrighten(1.5f);
 
 			// Black border for spacing
-			Draw::Rect(headArea.Expand(1), COL_BLACK);
-			Draw::Rect(tailArea.Expand(1), COL_BLACK);
+			Draw::Rect(headArea.Expand(1), isBeingPlayed ? COL_WHITE : COL_BLACK);
+			Draw::Rect(tailArea.Expand(1), isBeingPlayed ? COL_WHITE : COL_BLACK);
 
 			// Draw note body
 			Draw::Rect(headArea, col);
@@ -637,7 +721,9 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 	}
 
 	{ // Draw playhead
-		float screenX = ToScreenPos(GraphPos(state.playInfo.startTime, 0), ctx).x;
+		float screenX = ToScreenPos(
+			GraphPos(currentMode == MODE_PLAY ? state.playInfo.curGraphTime : state.playInfo.startGraphTime, 0),
+			ctx).x;
 
 		Vec topPoint = Vec(screenX, screenMin.y);
 		float height = MIN(GetTopBarHeight(ctx) / 2.f, 8.f);
