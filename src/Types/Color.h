@@ -33,6 +33,10 @@ struct Color {
 		);
 	}
 
+	Color WithAlpha(BYTE alpha) {
+		return Color(r, g, b, alpha);
+	}
+
 	string ToString() {
 		return FMT("(%i, %i, %i, %i)", r, g, b, a);
 	}
