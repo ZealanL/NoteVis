@@ -186,10 +186,12 @@
     <ClCompile Include="src\Core\MIDI\MIDI.cpp" />
     <ClCompile Include="src\Core\MIDI\MIDIPlayer\MIDIPlayer.cpp" />
     <ClCompile Include="src\Core\Note\NoteStorageCache\NoteStorageCache.cpp" />
+    <ClCompile Include="src\Core\NVFileSystem\NVFileSystem.cpp" />
     <ClCompile Include="src\Core\UI\Dialog\Dialog.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGraph.cpp" />
     <ClCompile Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.cpp" />
     <ClCompile Include="src\Core\UI\LogNotif\LogNotif.cpp" />
+    <ClCompile Include="src\Core\UI\MenuBar\MenuBar.cpp" />
     <ClCompile Include="src\Core\UI\UI.cpp" />
     <ClCompile Include="src\Framework.cpp" />
     <ClCompile Include="src\Render\Draw\Draw.cpp" />
@@ -230,6 +232,7 @@
     <ClInclude Include="src\Core\MIDI\MIDI.h" />
     <ClInclude Include="src\Core\MIDI\MIDIPlayer\MIDIPlayer.h" />
     <ClInclude Include="src\Core\Note\NoteStorageCache\NoteStorageCache.h" />
+    <ClInclude Include="src\Core\NVFileSystem\NVFileSystem.h" />
     <ClInclude Include="src\Core\UI\Dialog\Dialog.h" />
     <ClInclude Include="src\Core\Note\MusicTheoryDef.h" />
     <ClInclude Include="src\Core\Note\NoteColors.h" />
@@ -237,6 +240,7 @@
     <ClInclude Include="src\Core\Note\NoteGraph\NoteGroupInfo\NoteGroupInfo.h" />
     <ClInclude Include="src\Core\Note\NoteTypes.h" />
     <ClInclude Include="src\Core\UI\LogNotif\LogNotif.h" />
+    <ClInclude Include="src\Core\UI\MenuBar\MenuBar.h" />
     <ClInclude Include="src\Core\UI\UI.h" />
     <ClInclude Include="src\Render\Draw\Draw.h" />
     <ClInclude Include="src\Framework.h" />

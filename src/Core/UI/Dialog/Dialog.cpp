@@ -1,5 +1,7 @@
 #include "Dialog.h"
 
+#include "../../../Globals.h"
+
 int Dialog::RenderGetResult() {
 
 	auto io = ImGui::GetIO();

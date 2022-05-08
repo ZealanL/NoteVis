@@ -5,12 +5,15 @@
 #include "../../Core.h"
 #include "../../../Globals.h"
 
-#define MAKE_ACTION(name, func, bind, undoable) this->actions.push_back(new Action(#name, func, bind, undoable))
+#include "../../NVFileSystem/NVFileSystem.h"
+
+#define MAKE_ACTION(name, menuName, func, bind, undoable) this->actions[#name] = new Action(#name, menuName, func, bind, undoable)
 
 // NOTE: All hold actions are class properties as well
-#define MAKE_HOLDACTION(name, bind) this->ha_##name = new HoldAction(#name, bind); this->holdActions.push_back(this->ha_##name)
+#define MAKE_HOLDACTION(name, bind) this->holdActions[#name] = new HoldAction(#name, bind);
 
 void ActionDefineSystem::Init() {
+
 	// Should not initialize more than one
 	ASSERT(actions.empty() && holdActions.empty());
 
@@ -19,20 +22,47 @@ void ActionDefineSystem::Init() {
 	///////////////////////////////
 
 #pragma region Action Definitions
-	MAKE_ACTION(Undo, [] {
+
+	MAKE_ACTION(Open, "Open", [] {
+		// TODO: Implement
+		}, Keybind(SDLK_o, KBFLAG_CTRL), false);
+
+	MAKE_ACTION(Save, "Save", [] {
+		NVFileSystem::SaveScore();
+		}, Keybind(SDLK_s, KBFLAG_CTRL), false);
+
+	MAKE_ACTION(SaveAs, "Save As...", [] {
+		NVFileSystem::SaveScoreAs();
+		}, Keybind(SDLK_s, KBFLAG_CTRL | KBFLAG_SHIFT), false);
+
+	MAKE_ACTION(Undo, "Undo", [] {
 		g_History.Undo();
 		}, Keybind(SDLK_z, KBFLAG_CTRL), false);
 
-	MAKE_ACTION(Redo, [] {
+	MAKE_ACTION(Redo, "Redo", [] {
 		g_History.Redo();
 		}, Keybind(SDLK_y, KBFLAG_CTRL), false);
 
-	MAKE_ACTION(Play, [] {
+	MAKE_ACTION(Play, "Play", [] {
 		g_NoteGraph.TogglePlay();
-	}, Keybind(SDLK_SPACE), false);
+		}, Keybind(SDLK_SPACE), false);
 
 #pragma region Notes
-	MAKE_ACTION(DeleteSelectedNotes, [] {
+	MAKE_ACTION(SelectAllNotes, "Select All", [] {
+		if (g_NoteGraph.noteCache.selected.size() == g_NoteGraph.GetNoteCount()) {
+			// If all notes are already selected, deselect everything
+			g_NoteGraph.noteCache.DeselectAll();
+			DLOG("Deselected all notes");
+		} else {
+			for (Note* note : g_NoteGraph)
+				g_NoteGraph.noteCache.SetSelected(note, true);
+
+			DLOG("Selected all notes");
+		}
+
+		}, Keybind(SDLK_a, KBFLAG_CTRL), true);
+
+	MAKE_ACTION(DeleteSelectedNotes, "Delete", [] {
 
 		int deletedCount = g_NoteGraph.noteCache.selected.size();
 		if (g_NoteGraph.noteCache.selected.size() < g_NoteGraph.GetNoteCount()) {
@@ -47,21 +77,7 @@ void ActionDefineSystem::Init() {
 
 		}, Keybind(SDLK_DELETE), true);
 
-	MAKE_ACTION(SelectAllNotes, [] {
-		if (g_NoteGraph.noteCache.selected.size() == g_NoteGraph.GetNoteCount()) {
-			// If all notes are already selected, deselect everything
-			g_NoteGraph.noteCache.DeselectAll();
-			DLOG("Deselected all notes");
-		} else {
-			for (Note* note : g_NoteGraph)
-				g_NoteGraph.noteCache.SetSelected(note, true);
-
-			DLOG("Selected all notes");
-		}
-
-		}, Keybind(SDLK_a, KBFLAG_CTRL), true);
-
-	MAKE_ACTION(InvertSelectedNotes, [] {
+	MAKE_ACTION(InvertSelectedNotes, "Invert", [] {
 
 		// Determine min and max
 		KeyInt lowestKey = KEY_AMOUNT;
@@ -73,59 +89,58 @@ void ActionDefineSystem::Init() {
 
 		if (highestKey <= lowestKey) {
 			DLOG("Failed to invert selected notes (no keys selected?)");
+			return;
 		}
 
 		// Invert
 		for (Note* selected : g_NoteGraph.noteCache.selected)
 			g_NoteGraph.MoveNote(selected, selected->time, highestKey - (selected->key - lowestKey), true);
-
+		
 		// Check overlap
-		for (Note* selected : g_NoteGraph.noteCache.selected)
-			g_NoteGraph.CheckFixNoteOverlap(selected);
-
-		NG_NOTIF("Inverted {} notes (key range: {})", g_NoteGraph.noteCache.selected.size(), (int)(highestKey - lowestKey));
+			for (Note* selected : g_NoteGraph.noteCache.selected)
+				g_NoteGraph.CheckFixNoteOverlap(selected);
 
 		}, Keybind(SDLK_i), true);
 
 #pragma region Moving notes
 
 #pragma region Single step
-	MAKE_ACTION(ShiftSelectedNotesLeft, [] {
+	MAKE_ACTION(ShiftSelectedNotesLeft, "Move left", [] {
 		g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.snappingTime, 0);
 		}, Keybind(SDLK_LEFT), true);
 
-	MAKE_ACTION(ShiftSelectedNotesRight, [] {
+	MAKE_ACTION(ShiftSelectedNotesRight, "Move right", [] {
 		g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.snappingTime, 0);
 		}, Keybind(SDLK_RIGHT), true);
 
-	MAKE_ACTION(ShiftSelectedNotesUp, [] {
+#pragma region Measure Move
+	MAKE_ACTION(ShiftSelectedNotesLeftMeasure, "Move a measure forward", [] {
+		g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
+		}, Keybind(SDLK_LEFT, KBFLAG_CTRL), true);
+
+	MAKE_ACTION(ShiftSelectedNotesRightMeasure, "Move a measure back", [] {
+		g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
+		}, Keybind(SDLK_RIGHT, KBFLAG_CTRL), true);
+#pragma endregion
+
+	MAKE_ACTION(ShiftSelectedNotesUp, "Step up", [] {
 		g_NoteGraph.TryMoveSelectedNotes(0, 1);
 		}, Keybind(SDLK_UP), true);
 
-	MAKE_ACTION(ShiftSelectedNotesDown, [] {
+	MAKE_ACTION(ShiftSelectedNotesDown, "Step down", [] {
 		g_NoteGraph.TryMoveSelectedNotes(0, -1);
 		}, Keybind(SDLK_DOWN), true);
 
 #pragma endregion
 
 #pragma region Octave
-	MAKE_ACTION(ShiftSelectedNotesUpOctave, [] {
+	MAKE_ACTION(ShiftSelectedNotesUpOctave, "Move an octave up", [] {
 		g_NoteGraph.TryMoveSelectedNotes(0, KEYS_PER_OCTAVE);
 		}, Keybind(SDLK_UP, KBFLAG_CTRL), true);
 
-	MAKE_ACTION(ShiftSelectedNotesDownOctave, [] {
+	MAKE_ACTION(ShiftSelectedNotesDownOctave, "Move an octave down", [] {
 		g_NoteGraph.TryMoveSelectedNotes(0, -KEYS_PER_OCTAVE);
 		}, Keybind(SDLK_DOWN, KBFLAG_CTRL), true);
-#pragma endregion
-
-#pragma region Measure
-	MAKE_ACTION(ShiftSelectedNotesLeftMeasure, [] {
-		g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
-		}, Keybind(SDLK_LEFT, KBFLAG_CTRL), true);
-
-	MAKE_ACTION(ShiftSelectedNotesRightMeasure, [] {
-		g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
-		}, Keybind(SDLK_RIGHT, KBFLAG_CTRL), true);
 #pragma endregion
 
 #pragma endregion

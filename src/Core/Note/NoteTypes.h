@@ -33,7 +33,12 @@ struct Note {
 			&& time >= 0;		// Note time is valid
 	}
 
-	bool Compare(const Note& other) {
+	bool operator==(const Note& other) {
+		return time == other.time && key == other.key 
+			&& duration == other.duration && velocity == other.velocity;
+	}
+
+	int Compare(const Note& other) {
 		if (time != other.time)
 			return time < other.time;
 		if (key != other.key)

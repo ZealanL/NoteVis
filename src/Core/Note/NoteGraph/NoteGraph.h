@@ -125,7 +125,7 @@ public:
 	bool TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverlap = false);
 
 	void Serialize(ByteDataStream& bytesOut);
-	void Deserialize(ByteDataStream::ReadIterator& bytesIn);
+	void Deserialize(ByteDataStream::ReadIterator bytesIn);
 
 	// Base size for each note's head, in screen pixels
 	int GetNoteBaseHeadSizeScreen(RenderContext* ctx);

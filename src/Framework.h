@@ -3,6 +3,11 @@
 // Base defines - should be changed accordingly
 #define PROGRAM_NAME	"NoteVis"
 #define PROGRAM_VERSION "v1.0"
+
+#define PROGRAM_VERSION_MAJOR 1
+#define PROGRAM_VERSION_MINOR 0
+#define PROGRAM_VERSION_INT ((uint32)(PROGRAM_VERSION_MAJOR * 10000 + PROGRAM_VERSION_MINOR))
+
 #define DEFAULT_WINDOWSIZE_X 1280
 #define DEFAULT_WINDOWSIZE_Y 720
 
@@ -26,12 +31,14 @@
 #include <list>
 #include <iomanip>
 #include <chrono>
+#include <filesystem>
 
 // Remove need for std namespace scope for very common datatypes
 using std::vector;
 using std::map;
 using std::unordered_map;
 using std::set;
+using std::multiset;
 using std::unordered_set;
 using std::list;
 using std::stack;
@@ -94,7 +101,10 @@ typedef BYTE uint8_t;
 #define EXIT(code) exit(code)
 
 #ifdef PLAT_WINDOWS
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shlobj.h>
+#include <commdlg.h>
 
 // Show an error
 #define ERROR(s, ...) { MessageBoxA(0, ("ERROR: " + FMT(s, ##__VA_ARGS__)).c_str(), PROGRAM_NAME " Error", MB_ICONERROR); }
@@ -159,4 +169,17 @@ namespace FW {
 		T b = val + snappingInterval;
 		return (val - a > val - b) ? a : b;
 	}
+
+	template<int SIZE>
+	constexpr HASH HashDataConstExpr(const char data[SIZE]) {
+		HASH result = 0;
+		const HASH prime = 31;
+		for (HASH i = 0; i < SIZE; ++i) {
+			result = data[i] + (result * prime);
+		}
+		return result;
+	}
+
+	// Compile-time string hashing
+#define COMPSTRHASH(s) FW::HashDataConstExpr<sizeof(s)>(s)
 }

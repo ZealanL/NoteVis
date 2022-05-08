@@ -24,6 +24,8 @@ struct Keybind {
 	}
 
 	bool IsDown();
+
+	string ToString();
 };
 
 // Bindable action that executes something when pressed (save, create note, delete note, etc.)
@@ -32,12 +34,13 @@ private:
 	// Private to prevent execution without going through Execute() execution wrapper
 	std::function<void()> fnOnExecute;
 public:
-	string name;
+	string name, menuName;
 	Keybind bind;
 	bool undoable; // Can this action be undo'd
 
-	Action(string name, std::function<void()> fnOnExecute, Keybind bind, bool undoable) {
+	Action(string name, string menuName, std::function<void()> fnOnExecute, Keybind bind, bool undoable) {
 		this->name = name;
+		this->menuName = menuName;
 		this->fnOnExecute = fnOnExecute;
 		this->bind = bind;
 		this->undoable = undoable;

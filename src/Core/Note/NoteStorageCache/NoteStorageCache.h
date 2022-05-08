@@ -27,7 +27,6 @@ public:
 	PRIVCONST(SortedNoteSet, sortedByStartTime, SortedNoteSet(CompareNoteStartTime));
 	PRIVCONST(SortedNoteSet, sortedByEndTime, SortedNoteSet(CompareNoteEndTime));
 
-
 public:
 
 	NoteTime GetFurthestNoteEndTime() {

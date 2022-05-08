@@ -80,13 +80,22 @@ bool HistorySystem::Update(bool ignoreTime) {
 	return true;
 }
 
+bool HistorySystem::CanUndo() {
+	return !states.empty();
+}
+
+bool HistorySystem::CanRedo() {
+	return !redoStates.empty();
+}
+
+
 bool HistorySystem::Undo() {
 	auto currentState = GetCurrentState();
 
 	if (!states.empty() && states.front().GetHash() == currentState.GetHash())
 		states.pop_front();
 
-	if (!states.empty()) {
+	if (CanUndo()) {
 		bool addedCurrent = false;
 
 		if (redoStates.empty()) {
@@ -120,7 +129,7 @@ bool HistorySystem::Undo() {
 }
 
 bool HistorySystem::Redo() {
-	if (!redoStates.empty()) {
+	if (CanRedo()) {
 		states.push_front(GetCurrentState());
 
 		auto deserializeItr = redoStates.front().graphData.GetIterator();

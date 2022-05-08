@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "../Core/Core.h"
 #include "Draw/Draw.h"
+#include "../Core/NVFileSystem/NVFileSystem.h"
+#include "../../imgui/imgui_internal.h"
 
 // Draw list to be used for draw functions
 ImDrawList* targetDrawList = NULL;
@@ -32,19 +34,39 @@ bool Renderer::Init() {
 	SDL_GL_MakeCurrent(g_SDL_Window, g_SDL_GLContext);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 
-	 // Setup Dear ImGui context
+	 // Set up Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
-	// Setup Dear ImGui style
+	// Set up Dear ImGui style
 	ImGui::StyleColorsDark();
 
-	// Setup Platform/Renderer backends
+	// Set up Platform/Renderer backends
 	ImGui_ImplSDL2_InitForOpenGL(g_SDL_Window, g_SDL_GLContext);
 	const char* glslVersion = "#version 130";
 	ImGui_ImplOpenGL3_Init(glslVersion);
 
-	ImGui::GetIO().Fonts->AddFontDefault(); // Make sure default font is loaded before any rendering
+	// Set up ImGui font
+	ByteDataStream fontData;
+	wstring fontFilePath;
+
+#ifdef PLAT_WINDOWS
+	wchar_t fontFolderPathBuffer[MAX_PATH];
+	SHGetFolderPathW(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fontFolderPathBuffer);
+
+	fontFilePath = fontFolderPathBuffer;
+	fontFilePath += L"\\tahoma.ttf";
+#endif
+
+	if (!fontFilePath.empty() && NVFileSystem::LoadFile(fontFilePath, fontData)) {
+		ImFontConfig fontCfg;
+		fontCfg.OversampleH = 4;
+		ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontData.GetBasePointer(), fontData.size(), 16, &fontCfg);
+		DLOG("Loaded font \"{}\", file size: {}", string(fontFilePath.begin(), fontFilePath.end()), fontData.size());
+		ImGui::GetIO().Fonts->Build();
+	} else {
+		DLOG("Failed to find font to load, using ImGui default.");
+	}
 }
 
 void Renderer::Shutdown() {
@@ -71,7 +93,7 @@ void Renderer::EndFrame() {
 	if (g_ARG_DevMode) { // Show render stats
 		Draw::Text(
 			std::format("{} fps\n{}", devRenderStats.fps, FW::TimeDurationToString(devRenderStats.averageDrawTimePerFrame)),
-			Vec(GetWindowSize().x - 8, 8), COL_WHITE, Vec(1, 0), 100
+			Vec(GetWindowSize().x - 8, 8 + ImGui::GetFrameHeight()), COL_WHITE, Vec(1, 0), 100
 		);
 	}
 
@@ -89,10 +111,13 @@ void Renderer::EndFrame() {
 
 	devRenderStats.lastEndFrameTime = CURRENT_TIME;
 	{ // Update stats
+
 		devRenderStats.curFramesRendered++;
 		devRenderStats.timeSpendDrawing += devRenderStats.lastEndDrawTime - devRenderStats.lastBeginDrawTime;
-		if (floor(devRenderStats.lastEndFrameTime) > floor(devRenderStats.lastBeginFrameTime)) {
+		if (devRenderStats.lastUpdateTime + 1 <= CURRENT_TIME) {
 			// A second has passed
+			devRenderStats.lastUpdateTime = CURRENT_TIME;
+
 			devRenderStats.fps = devRenderStats.curFramesRendered;
 			devRenderStats.averageDrawTimePerFrame = devRenderStats.timeSpendDrawing / (double)devRenderStats.fps;
 

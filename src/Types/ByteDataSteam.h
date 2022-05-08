@@ -6,7 +6,7 @@ class ByteDataStream : public vector<BYTE> {
 public:
 	struct ReadIterator {
 		const ByteDataStream* stream;
-		int curIndex;
+		uint64 curIndex;
 
 		ReadIterator(const ByteDataStream* stream) : stream(stream) {
 			curIndex = 0;
@@ -14,6 +14,17 @@ public:
 
 		int BytesLeft() {
 			return MAX(0, stream->size() - curIndex);
+		}
+
+		ByteDataStream ReadBytesToStream(uint64 maxReadSize) {
+			uint64 readSize = MIN(BytesLeft(), maxReadSize);
+			
+
+			ByteDataStream streamOut;
+			streamOut.insert(streamOut.end(), stream->begin() + curIndex, stream->begin() + curIndex + readSize);
+
+			curIndex += readSize;
+			return streamOut;
 		}
 
 		template<typename T>
@@ -25,6 +36,22 @@ public:
 				curIndex = stream->size();
 			return result;
 		}
+
+		template<typename T>
+		T ReadVal(T defaultVal) {
+			T valResult{};
+			bool result = stream->ReadFromBytes(curIndex, &valResult);
+			return result ? valResult : defaultVal;
+		}
+
+		string ReadString() {
+			std::stringstream strData;
+			char charOut;
+			while (Read(&charOut) && charOut) {
+				strData << charOut;
+			}
+			return strData.str();
+		}
 	};
 
 	BYTE* GetBasePointer() const {
@@ -32,8 +59,13 @@ public:
 	}
 
 	template <typename T>
-	void WriteAsBytes(T object) {
+	void Write(T object) {
 		this->insert(this->end(), (BYTE*)&object, ((BYTE*)&object) + sizeof(T));
+	}
+
+	void WriteString(string str) {
+		this->insert(this->end(), str.begin(), str.end());
+		this->push_back(NULL); // Add terminator
 	}
 
 	// Returns true if bytes were read, false if out of range (is negative-index proof)

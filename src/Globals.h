@@ -30,7 +30,11 @@ GBLVAR(SDL_Window*,		SDL_Window);
 GBLVAR(SDL_GLContext,	SDL_GLContext);
 
 GBLVAR(Vec, MousePos);
+GBLVAR(bool, WasImGuiMenuActive); // If something in an ImGui menu was active last frame
+
 GBLVAR(ActionDefineSystem, Actions);
+#define GET_ACTION(name) g_Actions.actions[#name]
+#define GET_HOLDACTION(name) g_Actions.holdActions[#name]
 
 GBLVAR(HistorySystem, History)
 

@@ -34,9 +34,9 @@ string FW::TimeDurationToString(double time) {
 }
 
 FW::HASH FW::HashData(const void* ptr, int size) {
-	size_t result = 0;
-	const size_t prime = 31;
-	for (size_t i = 0; i < size; ++i) {
+	HASH result = 0;
+	constexpr HASH prime = 31;
+	for (HASH i = 0; i < size; ++i) {
 		result = ((BYTE*)ptr)[i] + (result * prime);
 	}
 	return result;

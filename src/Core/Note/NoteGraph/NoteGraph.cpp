@@ -118,9 +118,10 @@ void NoteGraph::MoveNote(Note* note, NoteTime newX, KeyInt newY, bool ignoreOver
 	IASSERT(newY, KEY_AMOUNT);
 
 	note->time = newX;
+	bool yChanged = note->key != newY;
 	note->key = newY;
 
-	noteCache.OnNoteChanged(note, newY != note->key);
+	noteCache.OnNoteChanged(note, yChanged);
 
 	if (!ignoreOverlap)
 		CheckFixNoteOverlap(note);
@@ -216,7 +217,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 
 	// Pick between idle or notevel adjust depending on keybinds
 	if (currentMode == MODE_IDLE || currentMode == MODE_ADJUSTNOTEVEL)
-		currentMode = g_Actions.ha_ChangeNoteVels->IsActive() ? MODE_ADJUSTNOTEVEL : MODE_IDLE;
+		currentMode = GET_HOLDACTION(ChangeNoteVels)->IsActive() ? MODE_ADJUSTNOTEVEL : MODE_IDLE;
 		
 
 	// Scroll graph
@@ -250,7 +251,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				if (isControlDown) {
 					// Horizontal zoom
 					hZoom *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
-					hZoom = CLAMP(hZoom, 20, 2000);
+					hZoom = CLAMP(hZoom, 20, 2000);  
 				} else {
 					// Horizontal scroll
 					hScroll += -scrollDelta * (isShiftDown ? 5000 : 500) / (hZoom / 100);
@@ -444,7 +445,6 @@ bool NoteGraph::TryMoveSelectedNotes(int amountX, int amountY, bool ignoreOverla
 		MoveNote(note, note->time + amountX, note->key + amountY, true);
 	}
 
-
 	// Fix overlap after (otherwise we would "fix overlap" partway-through the movement)
 	if (!ignoreOverlap)
 		for (Note* note : noteCache.selected)
@@ -458,15 +458,15 @@ void NoteGraph::Serialize(ByteDataStream& bytesOut) {
 
 	for (Note* note : noteCache.sortedByStartTime) {
 		ByteDataStream byteData;
-		bytesOut.WriteAsBytes(note->key);
-		bytesOut.WriteAsBytes(note->time);
-		bytesOut.WriteAsBytes(note->duration);
-		bytesOut.WriteAsBytes(note->velocity);
-		bytesOut.WriteAsBytes(IsNoteSelected(note));
+		bytesOut.Write(note->key);
+		bytesOut.Write(note->time);
+		bytesOut.Write(note->duration);
+		bytesOut.Write(note->velocity);
+		bytesOut.Write(IsNoteSelected(note));
 	}
 }
 
-void NoteGraph::Deserialize(ByteDataStream::ReadIterator& bytesIn) {
+void NoteGraph::Deserialize(ByteDataStream::ReadIterator bytesIn) {
 	int notesRead;
 	for (notesRead = 0; bytesIn.BytesLeft(); notesRead++) {
 		Note newNote;
@@ -547,7 +547,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 		Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(noteAreaScreen.max.x, screenY), Color(25, 25, 25));
 	}
 
-	// Vertical lines lines
+	// Vertical measure lines
 	for (int i = MAX(0, graphViewStartTime); i <= graphViewEndTime; i += (NOTETIME_PER_BEAT / 4)) {
 		bool isBeatLine = i % NOTETIME_PER_BEAT == 0;
 		int beat = i / NOTETIME_PER_BEAT;
@@ -561,7 +561,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 		Color color = Color(255, 255, 255, alpha);
 
-		Draw::Line(Vec(screenX, screenMin.y), Vec(screenX, screenMax.y), color);
+		Draw::PixelPerfectLine(Vec(screenX, screenMin.y), Vec(screenX, screenMax.y), color);
 
 		// Measure numbers
 		if (isMeasureLine)
@@ -575,19 +575,12 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 		// Determine visible notes
 		// TODO: Sub-optimal to parse all notes each frame
-		for (Note* note : *this) {
+		for (Note* note : noteCache.sortedByStartTime) {
 			if (note->time > graphViewEndTime || note->time + note->duration < graphViewStartTime)
 				continue;
 
 			notesToDraw.push_back(note);
 		}
-
-		// Sorting by time
-		std::sort(notesToDraw.begin(), notesToDraw.end(),
-			[](const Note* a, const Note* b) -> bool {
-				return a->time < b->time;
-			}
-		);
 
 		float noteHeadSize_half = floorf(noteSize / 2);
 		float noteHeadHollowSize_half = roundf(noteSize / 3);
@@ -697,26 +690,48 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 		}
 	}
 
-	{ // Draw playhead
-		float screenX = ToScreenPos(
-			GraphPos(currentMode == MODE_PLAY ? state.playInfo.curGraphTime : state.playInfo.startGraphTime, 0),
-			ctx).x;
+	{ // Draw playheads
 
-		Vec topPoint = Vec(screenX, screenMin.y);
-		float height = MIN(GetTopBarHeight(ctx) / 2.f, 8.f);
+		// i=0: Draw start playhead
+		// i=1: Draw current playhead
+		for (int i = 0; i < 2; i++) {
+			bool activePlayhead = i == 1;
 
-		// Playhead line
-		Draw::PixelPerfectLine(topPoint, Vec(screenX, screenMax.y), COL_WHITE);
-		Draw::PixelPerfectLine(Vec(screenX - 1, screenMin.y), Vec(screenX - 1, screenMax.y), COL_BLACK);
-		Draw::PixelPerfectLine(Vec(screenX + 1, screenMin.y), Vec(screenX + 1, screenMax.y), COL_BLACK);
+			BYTE alpha;
+			if (activePlayhead) {
+				alpha = 240;
+			} else {
+				alpha = 140;
+			}
 
-		vector<Vec> playheadPoints = {
-			topPoint,
-			topPoint + Vec(-height,	-height),
-			topPoint + Vec(height,	-height),
-		};
+			Color mainCol;
+			if (activePlayhead) {
+				mainCol = COL_WHITE.WithAlpha(alpha);
+			} else {
+				mainCol = Color(0, 255, 255).WithAlpha(alpha);
+			}
+			Color blackCol = COL_BLACK.WithAlpha(alpha);
 
-		Draw::ConvexPoly(playheadPoints, COL_WHITE);
+			float screenX = ToScreenPos(
+				GraphPos(activePlayhead ? state.playInfo.curGraphTime : state.playInfo.startGraphTime, 0),
+				ctx).x;
+
+			Vec topPoint = Vec(screenX, screenMin.y);
+			float height = MIN(GetTopBarHeight(ctx) / 2.f, 8.f);
+
+			// Playhead line
+			Draw::PixelPerfectLine(topPoint, Vec(screenX, screenMax.y), mainCol);
+			Draw::PixelPerfectLine(Vec(screenX - 1, screenMin.y), Vec(screenX - 1, screenMax.y), blackCol);
+			Draw::PixelPerfectLine(Vec(screenX + 1, screenMin.y), Vec(screenX + 1, screenMax.y), blackCol);
+
+			vector<Vec> playheadPoints = {
+				topPoint,
+				topPoint + Vec(-height,	-height),
+				topPoint + Vec(height,	-height),
+			};
+
+			Draw::ConvexPoly(playheadPoints, mainCol);
+		}
 	}
 
 	if (currentMode == NoteGraph::MODE_RECTSELECT) {

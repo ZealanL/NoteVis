@@ -3,11 +3,8 @@
 
 class ActionDefineSystem {
 public:
-	vector<Action*> actions;
-	vector<HoldAction*> holdActions;
-
-	// Hold actions go here
-	HoldAction* ha_ChangeNoteVels;
+	unordered_map<string, Action*> actions;
+	unordered_map<string, HoldAction*> holdActions;
 
 	void Init();
 };

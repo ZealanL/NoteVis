@@ -39,6 +39,9 @@ public:
 	// Returns true if a new state was created
 	bool Update(bool ignoreTime = false);
 
+	bool CanUndo();
+	bool CanRedo();
+
 	// Try to restore previous serialized state
 	// Returns true if history was restored, false if no history left to undo
 	bool Undo();
