@@ -165,7 +165,7 @@ struct Area {
 	}
 
 	Area HDivRel(float beginRatio, float endRatio) {
-		assert(beginRatio > endRatio);
+		ASSERT(beginRatio > endRatio);
 		float baseWidth = Width();
 
 		Area newArea = *this;
@@ -175,7 +175,7 @@ struct Area {
 	}
 
 	Area VDivRel(float beginRatio, float endRatio) {
-		assert(beginRatio > endRatio);
+		ASSERT(beginRatio > endRatio);
 		float baseHeight = Height();
 
 		Area newArea = *this;
@@ -185,7 +185,7 @@ struct Area {
 	}
 
 	Area HDiv(float beginWidth, float endWidth) {
-		assert(beginWidth > endWidth);
+		ASSERT(beginWidth > endWidth);
 		Area newArea = *this;
 		newArea.min.x = min.x + beginWidth;
 		newArea.max.x = min.x + endWidth;
@@ -193,7 +193,7 @@ struct Area {
 	}
 
 	Area VDiv(float beginHeight, float endHeight) {
-		assert(beginHeight > endHeight);
+		ASSERT(beginHeight > endHeight);
 		Area newArea = *this;
 		newArea.min.y = min.y + beginHeight;
 		newArea.max.y = min.y + endHeight;

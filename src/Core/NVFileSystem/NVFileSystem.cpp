@@ -126,9 +126,16 @@ void SerializeScore(ByteDataStream& out) {
 	// Add all notegraph data
 	out.reserve(noteGraphData.size());
 	out.insert(out.end(), noteGraphData.begin(), noteGraphData.end());
+
+	bool compressResult = out.Compress();
+	ASSERT(compressResult);
 }
 
-bool DeserializeScore(ByteDataStream::ReadIterator itr) {
+bool DeserializeScore(ByteDataStream& data) {
+	if (!data.Decompress())
+		return false;
+
+	auto itr = data.GetIterator();
 
 	if (itr.ReadVal<NvMagicInt>(-1) != NV_SCORE_MAGIC)
 		return false; // Missing/invalid magic
@@ -142,7 +149,9 @@ bool DeserializeScore(ByteDataStream::ReadIterator itr) {
 	if (noteGraphDataLength == -1 || noteGraphDataLength > itr.BytesLeft())
 		return false;
 
-	ByteDataStream noteGraphData = itr.ReadBytesToStream(noteGraphDataLength);
+	ByteDataStream noteGraphData;
+	if (itr.ReadBytesToStream(noteGraphData, noteGraphDataLength) != noteGraphDataLength)
+		return false;
 	g_NoteGraph.Deserialize(noteGraphData.GetIterator());
 
 	return true;
@@ -169,7 +178,7 @@ bool NVFileSystem::OpenScore() {
 	if (!TryCloseScore())
 		return false;
 
-	bool result = DeserializeScore(scoreData.GetIterator());
+	bool result = DeserializeScore(scoreData);
 	if (result) {
 		g_ScoreSavePath = openPath;
 		g_HasUnsavedChanges = false;

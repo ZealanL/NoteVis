@@ -7,6 +7,9 @@
 #include "UI/UI.h"
 #include "MIDI/MIDI.h"
 
+#include "../Render/Draw/Draw.h"
+#include "NVFileSystem/NVFileSystem.h"
+
 
 NoteGraph::RenderContext GetNoteGraphRenderCtx() {
 	NoteGraph::RenderContext ctx;
@@ -17,29 +20,7 @@ NoteGraph::RenderContext GetNoteGraphRenderCtx() {
 	return ctx;
 }
 
-#include "../Render/Draw/Draw.h"
-#include "NVFileSystem/NVFileSystem.h"
 void Core::OnRender() {
-	// Test stuff
-	if (g_NoteGraph.GetNoteCount() == 0) {
-
-		std::ifstream midiDataIn("C:\\Users\\admin\\Downloads\\Mephisto waltz_Duepree10.MID", std::ios::binary);
-		assert(midiDataIn.good());
-		ByteDataStream inData;
-		inData.ReadFromFileStream(midiDataIn);
-
-		MIDIParseData parseData;
-		if (MIDI::ParseMidi(inData.GetIterator(), parseData)) {
-			DLOG("Notes read: {}", parseData.notes.size());
-		} else {
-			assert(false);
-		}
-
-		for (Note note : parseData.notes) {
-			g_NoteGraph.AddNote(note);
-		}
-	}
-
 	auto renderCtx = GetNoteGraphRenderCtx();
 	g_NoteGraph.Render(&renderCtx);
 }
@@ -58,7 +39,6 @@ void Core::ProcessEvent(SDL_Event& e) {
 	switch (e.type) {
 	case SDL_QUIT:
 		return TryUserExit();
-
 	case SDL_KEYDOWN:
 	{
 		SDL_Keycode pressedKey = e.key.keysym.sym;
@@ -94,5 +74,4 @@ void Core::ProcessEvent(SDL_Event& e) {
 	// Only events to the note graph if they are within the screen area and no ImGui menu is active
 	if (g_MousePos >= inputArea.min && g_MousePos <= inputArea.max && !g_WasImGuiMenuActive)
 		g_NoteGraph.UpdateWithInput(e, &renderCtx);
-
 }

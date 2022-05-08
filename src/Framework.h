@@ -155,7 +155,6 @@ public: const type* name = _##name
 
 // Framework functions
 namespace FW {
-
 	wstring Widen(string str);
 	string Narrow(wstring wstr);
 

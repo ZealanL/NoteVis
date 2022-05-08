@@ -8,24 +8,14 @@ public:
 		const ByteDataStream* stream;
 		uint64 curIndex;
 
-		ReadIterator(const ByteDataStream* stream) : stream(stream) {
-			curIndex = 0;
-		}
+		ReadIterator(const ByteDataStream* stream) : stream(stream), curIndex(0) {}
 
 		int BytesLeft() {
 			return MAX(0, stream->size() - curIndex);
 		}
 
-		ByteDataStream ReadBytesToStream(uint64 maxReadSize) {
-			uint64 readSize = MIN(BytesLeft(), maxReadSize);
-			
-
-			ByteDataStream streamOut;
-			streamOut.insert(streamOut.end(), stream->begin() + curIndex, stream->begin() + curIndex + readSize);
-
-			curIndex += readSize;
-			return streamOut;
-		}
+		// Returns number of bytes read
+		uint64 ReadBytesToStream(ByteDataStream& streamOut, uint64 maxReadSize);
 
 		template<typename T>
 		bool Read(T* out) {
@@ -44,14 +34,7 @@ public:
 			return result ? valResult : defaultVal;
 		}
 
-		string ReadString() {
-			std::stringstream strData;
-			char charOut;
-			while (Read(&charOut) && charOut) {
-				strData << charOut;
-			}
-			return strData.str();
-		}
+		string ReadString();
 	};
 
 	BYTE* GetBasePointer() const {
@@ -82,38 +65,18 @@ public:
 		return ReadIterator(this);
 	}
 
-	void ReadFromFileStream(std::ifstream& streamIn) {
-		streamIn.seekg(0, streamIn.end);
-		size_t fileSize = streamIn.tellg();
-		streamIn.seekg(0, streamIn.beg);
+	void ReadFromFileStream(std::ifstream& streamIn);
 
-		if (fileSize > 0) {
-			this->resize(fileSize);
-			streamIn.read((char*)GetBasePointer(), fileSize);
-		}
-	}
+	void WriteToFileStream(std::ofstream& streamOut) const;
 
-	void WriteToFileStream(std::ofstream& streamOut) const {
-		if (!this->empty())
-			streamOut.write((char*)GetBasePointer(), this->size());
-	}
-
-	bool DataMatches(const ByteDataStream& other) {
-		if (this->empty() || other.empty()) {
-			return this->empty() == other.empty();
-		} else {
-			return (this->size() == other.size()) && !memcmp(this->GetBasePointer(), other.GetBasePointer(), this->size());
-		}
-	}
+	bool DataMatches(const ByteDataStream& other) const;
 
 	FW::HASH CalculateHash() {
 		return this->empty() ? NULL : FW::HashData(this->GetBasePointer(), this->size());
 	}
 
-	// Simply compare based off sums of bytes
-	bool operator<(ByteDataStream& other) {
-		return CalculateHash() < other.CalculateHash();
-	}
+	bool Compress();
+	bool Decompress();
 };
 
 // Stores the difference from one ByteDataSteam to the next 
