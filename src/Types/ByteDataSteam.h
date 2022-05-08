@@ -40,7 +40,7 @@ public:
 		template<typename T>
 		T ReadVal(T defaultVal) {
 			T valResult{};
-			bool result = stream->ReadFromBytes(curIndex, &valResult);
+			bool result = Read(&valResult);
 			return result ? valResult : defaultVal;
 		}
 
