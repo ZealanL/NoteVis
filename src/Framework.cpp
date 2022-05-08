@@ -1,12 +1,38 @@
 #include "Framework.h"
 
 auto startTime = std::chrono::system_clock::now();
+
 double FW::GetCurTime() {
 	using namespace std::chrono;
 	auto timeSinceStartup = system_clock::now() - startTime;
 
 	double microsecs = duration_cast<microseconds>(timeSinceStartup).count();
     return microsecs / (1000.0 * 1000.0);
+}
+
+wstring FW::Widen(string str) {
+	return wstring(str.begin(), str.end());
+}
+
+string FW::Narrow(wstring wstr) {
+	return string(wstr.begin(), wstr.end());
+}
+
+void FW::ShowError(string title, string text) {
+#ifdef PLAT_WINDOWS
+	MessageBoxA(0, ("Error: " + text).c_str(), title.c_str(), MB_ICONERROR);
+#else
+	// TODO: Implement
+#endif
+}
+
+bool FW::ShowWarning(string title, string text, bool yesNo) {
+#ifdef PLAT_WINDOWS
+	int result = MessageBoxA(0, text.c_str(), title.c_str(), yesNo ? (MB_ICONWARNING | MB_YESNO) : MB_ICONWARNING);
+	return yesNo ? (result == IDYES) : true;
+#else
+	// TODO: Implement
+#endif
 }
 
 string FW::TimeDurationToString(double time) {

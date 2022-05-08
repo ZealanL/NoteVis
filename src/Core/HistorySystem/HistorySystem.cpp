@@ -3,7 +3,7 @@
 #include "../../Globals.h"
 #include "../Core.h"
 
-HistoryState GetCurrentState() {
+HistoryState HistorySystem::GetCurrentState() {
 	ByteDataStream data;
 	g_NoteGraph.Serialize(data);
 	return HistoryState(data);
@@ -24,6 +24,8 @@ bool HistorySystem::Update(bool ignoreTime) {
 
 	if (!states.empty() && states.front().Matches(currentState))
 		return false; // No change
+
+	g_HasUnsavedChanges = true;
 
 	// If we were undoing things, remove redo states
 	if (!redoStates.empty()) {

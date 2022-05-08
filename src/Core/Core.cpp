@@ -18,6 +18,7 @@ NoteGraph::RenderContext GetNoteGraphRenderCtx() {
 }
 
 #include "../Render/Draw/Draw.h"
+#include "NVFileSystem/NVFileSystem.h"
 void Core::OnRender() {
 	// Test stuff
 	if (g_NoteGraph.GetNoteCount() == 0) {
@@ -43,9 +44,9 @@ void Core::OnRender() {
 	g_NoteGraph.Render(&renderCtx);
 }
 
-void Core::OnUserExit() {
-	// TODO: Implement unsaved work warning
-	EXIT(EXIT_SUCCESS);
+void Core::TryUserExit() {
+	if (NVFileSystem::TryCloseScore())
+		EXIT(EXIT_SUCCESS);
 }
 
 void Core::ProcessEvent(SDL_Event& e) {
@@ -56,12 +57,7 @@ void Core::ProcessEvent(SDL_Event& e) {
 
 	switch (e.type) {
 	case SDL_QUIT:
-		return OnUserExit();
-
-	case SDL_WINDOWEVENT:
-		if (e.window.event == SDL_WINDOWEVENT_CLOSE && e.window.windowID == SDL_GetWindowID(g_SDL_Window))
-			return OnUserExit();
-		break;
+		return TryUserExit();
 
 	case SDL_KEYDOWN:
 	{

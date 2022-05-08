@@ -80,6 +80,12 @@ void Renderer::Shutdown() {
 }
 
 void Renderer::BeginFrame() {
+	string windowTitle = (PROGRAM_NAME " " PROGRAM_VERSION " " ARCH_LABEL " - ") + NVFileSystem::GetCurrentScoreName();
+	if (g_HasUnsavedChanges) {
+		windowTitle += '*';
+	}
+	SDL_SetWindowTitle(g_SDL_Window, windowTitle.c_str());
+
 	devRenderStats.lastBeginFrameTime = CURRENT_TIME;
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();

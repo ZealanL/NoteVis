@@ -4,8 +4,8 @@
 #include "../UI.h"
 #include "../../NVFileSystem/NVFileSystem.h"
 
-void SubMenu(string name, std::function<void()> runFunc) {
-	if (ImGui::BeginMenu(name.c_str())) {
+void SubMenu(string name, std::function<void()> runFunc, bool enabled = true) {
+	if (ImGui::BeginMenu(name.c_str(), enabled)) {
 		runFunc();
 		ImGui::EndMenu();
 	}
@@ -33,12 +33,22 @@ void MenuBar::Draw() {
 		[] {
 
 			if (CustomOption("New")) {
-
+				if (NVFileSystem::TryCloseScore()) {
+					NVFileSystem::SaveScoreAs();
+				}
 			}
 
 			Option("Open");
 			Option("Save");
 			Option("SaveAs");
+
+			Separator();
+
+			if (CustomOption("Load MIDI")) {
+				if (!g_NoteGraph.IsEmpty()) {
+					// TODO: Implement
+				} 
+			}
 		}
 	);
 
@@ -75,9 +85,22 @@ void MenuBar::Draw() {
 
 			Separator();
 
+			SubMenu("Move Key...", [=] {
+				Option("ShiftSelectedNotesUp", noteEditsEnabled);
+				Option("ShiftSelectedNotesDown", noteEditsEnabled);
+				Option("ShiftSelectedNotesUpOctave", noteEditsEnabled);
+				Option("ShiftSelectedNotesDownOctave", noteEditsEnabled);
+				}, noteEditsEnabled);
+
+			SubMenu("Move Time...", [=] {
+				Option("ShiftSelectedNotesLeft", noteEditsEnabled);
+				Option("ShiftSelectedNotesRight", noteEditsEnabled);
+				Option("ShiftSelectedNotesLeftMeasure", noteEditsEnabled);
+				Option("ShiftSelectedNotesRightMeasure", noteEditsEnabled);
+				}, noteEditsEnabled);
+
 			Option("DeleteSelectedNotes", noteEditsEnabled);
 			Option("InvertSelectedNotes", noteEditsEnabled);
-
 		}
 	);
 

@@ -35,6 +35,8 @@ private:
 	deque<HistoryState> redoStates;
 public:
 
+	HistoryState GetCurrentState();
+
 	// Serialize the current state to history - will erase anything above the current undo depth
 	// Returns true if a new state was created
 	bool Update(bool ignoreTime = false);

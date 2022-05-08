@@ -4,13 +4,60 @@
 
 // Written at the start of NoteVis score files
 typedef uint32 NvMagicInt;
-constexpr NvMagicInt NV_SCORE_MAGIC = 'NVS\0';
+constexpr NvMagicInt NV_SCORE_MAGIC = '\0SVN'; // "NVS";
 
 namespace fs = std::filesystem;
+
+// TODO: Move?
+fs::path currentScoreSavePath = fs::path();
 
 #ifdef PLAT_WINDOWS
 #define SCORE_WINDOWS_FILE_FILTER (L"NoteVis Score Files (*" SCORE_FILE_EXTENSION ")\0*" SCORE_FILE_EXTENSION "\0")
 #endif
+
+fs::path NVFileSystem::FilePrompt(string promptTitle, fs::path initialPath, string fileTypeLabel, string fileTypeExtension, bool save) {
+	fs::path resultPath;
+
+#ifdef PLAT_WINDOWS
+	{
+		wchar_t pathBuffer[MAX_PATH]{};
+		OPENFILENAMEW ofn{};
+		ofn.lStructSize = sizeof(ofn);
+
+		// Set window handle to our main SDL window
+		SDL_SysWMinfo sysInfo;
+		SDL_VERSION(&sysInfo.version);
+		SDL_GetWindowWMInfo(g_SDL_Window, &sysInfo);
+		ofn.hwndOwner = sysInfo.info.win.window;
+
+		if (!initialPath.empty()) {
+			ofn.lpstrInitialDir = initialPath.c_str();
+		}
+
+		wstring filterStr = FW::Widen(fileTypeLabel + " (*" + fileTypeExtension + ")") 
+			+ L'\0' + L'*' + FW::Widen(fileTypeExtension) + L'\0';
+
+		ofn.lpstrFilter = filterStr.c_str();
+		ofn.lpstrFile = pathBuffer;
+		ofn.nMaxFile = MAX_PATH;
+
+		wstring wPromptTitle = FW::Widen(promptTitle);
+		ofn.lpstrTitle = wPromptTitle.c_str();
+		ofn.Flags = OFN_DONTADDTORECENT | (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
+
+		if (!GetOpenFileNameW(&ofn))
+			return fs::path();
+
+		resultPath = pathBuffer;
+		if (save)
+			resultPath.replace_extension(wstring(fileTypeExtension.begin(), fileTypeExtension.end()));
+	}
+#else
+	// TODO: Implement 
+#endif
+
+	return resultPath;
+}
 
 fs::path NVFileSystem::GetDataPath() {
 
@@ -77,7 +124,7 @@ void SerializeScore(ByteDataStream& out) {
 	g_NoteGraph.Serialize(noteGraphData);
 
 	// Write notegraph data size
-	out.Write<uint64>(noteGraphData.size());
+	out.Write<uint64>((uint64)noteGraphData.size());
 
 	// Add all notegraph data
 	out.reserve(noteGraphData.size());
@@ -104,17 +151,46 @@ bool DeserializeScore(ByteDataStream::ReadIterator itr) {
 	return true;
 }
 
-bool NVFileSystem::OpenScore() {
-#ifdef PLAT_WINDOWS
-	
-#else
-	// TODO: Implement 
-#endif
+bool NVFileSystem::TryCloseScore(bool force) {
+	if (!force && g_HasUnsavedChanges) {
+		if (!WARN_YESNO("This score has unsaved changes. Are you sure you'd like to close it?"))
+			return false;
+	}
+
+	g_NoteGraph.ClearEverything(false);
+
 	return true;
 }
 
-// TODO: Move?
-fs::path currentScoreSavePath = fs::path();
+bool NVFileSystem::OpenScore() {
+	fs::path openPath = FilePrompt("Open Score...", GetScoresPath(), "NoteVis Scores", SCORE_FILE_EXTENSION, false);
+
+	ByteDataStream scoreData;
+	if (!LoadFile(openPath, scoreData))
+		return false;
+
+	if (!TryCloseScore())
+		return false;
+
+	bool result = DeserializeScore(scoreData.GetIterator());
+	if (result) {
+		currentScoreSavePath = openPath;
+		g_HasUnsavedChanges = false;
+		NG_NOTIF("Loaded \"{}\"", GetCurrentScoreName());
+		return true;
+	} else {
+		return false;
+	}
+}
+
+string NVFileSystem::GetCurrentScoreName() {
+	fs::path scoreName = currentScoreSavePath.filename();
+	if (scoreName.empty()) {
+		return "Untitled Score";
+	} else {
+		return scoreName.string();
+	}
+}
 
 bool NVFileSystem::SaveScore() {
 	if (currentScoreSavePath.empty()) {
@@ -124,6 +200,9 @@ bool NVFileSystem::SaveScore() {
 		SerializeScore(scoreData);
 		if (!SaveFile(currentScoreSavePath, scoreData)) {
 			// TODO: Show error
+		} else {
+			NG_NOTIF("Saved \"{}\"", GetCurrentScoreName());
+			g_HasUnsavedChanges = false;
 		}
 	}
 
@@ -131,8 +210,6 @@ bool NVFileSystem::SaveScore() {
 }
 
 bool NVFileSystem::SaveScoreAs() {
-	fs::path savePath;
-
 	auto scoresPath = GetScoresPath();
 	if (!fs::exists(scoresPath)) {
 		try {
@@ -142,42 +219,10 @@ bool NVFileSystem::SaveScoreAs() {
 		}
 	}
 
-#ifdef PLAT_WINDOWS
-	{
-		wchar_t savePathBuffer[MAX_PATH]{};
-		OPENFILENAMEW ofn{};
-		ofn.lStructSize = sizeof(ofn);
-
-		// Set window handle to our main SDL window
-		SDL_SysWMinfo sysInfo;
-		SDL_VERSION(&sysInfo.version);
-		SDL_GetWindowWMInfo(g_SDL_Window, &sysInfo);
-		ofn.hwndOwner = sysInfo.info.win.window;
-	
-		wstring scoresPathStr = GetScoresPath();
-		ofn.lpstrInitialDir = scoresPathStr.c_str();
-
-		ofn.lpstrFilter = SCORE_WINDOWS_FILE_FILTER;
-		ofn.lpstrFile = savePathBuffer;
-		ofn.nMaxFile = MAX_PATH;
-		ofn.lpstrTitle = L"Save Score As...";
-		ofn.Flags = OFN_DONTADDTORECENT;
-
-		if (!GetSaveFileNameW(&ofn))
-			return false;
-
-		savePath = savePathBuffer;
-		savePath += SCORE_FILE_EXTENSION;
-	}
-#else
-	// TODO: Implement 
-#endif
-
-	ByteDataStream scoreData; SerializeScore(scoreData);
-	if (SaveFile(savePath, scoreData)) {
-		currentScoreSavePath = savePath;
-		return true;
-	} else {
+	fs::path savePath = FilePrompt("Save Score...", GetScoresPath(), "NoteVis Scores", SCORE_FILE_EXTENSION, true);
+	if (savePath.empty())
 		return false;
-	}
+
+	currentScoreSavePath = savePath;
+	return SaveScore();
 }

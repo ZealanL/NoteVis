@@ -67,6 +67,10 @@ public:
 		return noteCache.selected.count(note);
 	}
 
+	bool IsEmpty() {
+		return noteCache.notes.empty();
+	}
+
 	struct TimeSignature {
 		int beatCount = 4;
 		// TODO: Denominator so we can support 7/8 and such

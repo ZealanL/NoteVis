@@ -12,8 +12,8 @@
 
 namespace Core {
 	void OnRender();
-
-	void OnUserExit();
+	
+	void TryUserExit();
 
 	void ProcessEvent(SDL_Event& e);
 }

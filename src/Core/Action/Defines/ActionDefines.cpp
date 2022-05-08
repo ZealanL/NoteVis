@@ -24,7 +24,7 @@ void ActionDefineSystem::Init() {
 #pragma region Action Definitions
 
 	MAKE_ACTION(Open, "Open", [] {
-		// TODO: Implement
+		NVFileSystem::OpenScore();
 		}, Keybind(SDLK_o, KBFLAG_CTRL), false);
 
 	MAKE_ACTION(Save, "Save", [] {
@@ -114,11 +114,11 @@ void ActionDefineSystem::Init() {
 		}, Keybind(SDLK_RIGHT), true);
 
 #pragma region Measure Move
-	MAKE_ACTION(ShiftSelectedNotesLeftMeasure, "Move a measure forward", [] {
+	MAKE_ACTION(ShiftSelectedNotesLeftMeasure, "Move a measure back", [] {
 		g_NoteGraph.TryMoveSelectedNotes(-g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
 		}, Keybind(SDLK_LEFT, KBFLAG_CTRL), true);
 
-	MAKE_ACTION(ShiftSelectedNotesRightMeasure, "Move a measure back", [] {
+	MAKE_ACTION(ShiftSelectedNotesRightMeasure, "Move a measure forward", [] {
 		g_NoteGraph.TryMoveSelectedNotes(g_NoteGraph.timeSig.beatCount * NOTETIME_PER_BEAT, 0);
 		}, Keybind(SDLK_RIGHT, KBFLAG_CTRL), true);
 #pragma endregion
