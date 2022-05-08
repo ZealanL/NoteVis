@@ -42,8 +42,8 @@ GBLVAR(MIDIPlayer, MIDIPlayer);
 
 GBLVAR(NoteGraph, NoteGraph);
 
-// For "unsaved changes" warning
-GBLVAR(bool, HasUnsavedChanges);
+GBLVAR(std::filesystem::path, ScoreSavePath);
+GBLVAR(bool, HasUnsavedChanges); // For "unsaved changes" warning
 
 GBLVAR(bool, KeyboardState[SDL_NUM_SCANCODES], {});
 GBLVAR(bool, MouseState[6], {});

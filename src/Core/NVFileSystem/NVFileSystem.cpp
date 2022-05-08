@@ -8,9 +8,6 @@ constexpr NvMagicInt NV_SCORE_MAGIC = '\0SVN'; // "NVS";
 
 namespace fs = std::filesystem;
 
-// TODO: Move?
-fs::path currentScoreSavePath = fs::path();
-
 #ifdef PLAT_WINDOWS
 #define SCORE_WINDOWS_FILE_FILTER (L"NoteVis Score Files (*" SCORE_FILE_EXTENSION ")\0*" SCORE_FILE_EXTENSION "\0")
 #endif
@@ -174,7 +171,7 @@ bool NVFileSystem::OpenScore() {
 
 	bool result = DeserializeScore(scoreData.GetIterator());
 	if (result) {
-		currentScoreSavePath = openPath;
+		g_ScoreSavePath = openPath;
 		g_HasUnsavedChanges = false;
 		NG_NOTIF("Loaded \"{}\"", GetCurrentScoreName());
 		return true;
@@ -184,7 +181,7 @@ bool NVFileSystem::OpenScore() {
 }
 
 string NVFileSystem::GetCurrentScoreName() {
-	fs::path scoreName = currentScoreSavePath.filename();
+	fs::path scoreName = g_ScoreSavePath.filename();
 	if (scoreName.empty()) {
 		return "Untitled Score";
 	} else {
@@ -193,12 +190,12 @@ string NVFileSystem::GetCurrentScoreName() {
 }
 
 bool NVFileSystem::SaveScore() {
-	if (currentScoreSavePath.empty()) {
+	if (g_ScoreSavePath.empty()) {
 		SaveScoreAs();
 	} else {
 		ByteDataStream scoreData;
 		SerializeScore(scoreData);
-		if (!SaveFile(currentScoreSavePath, scoreData)) {
+		if (!SaveFile(g_ScoreSavePath, scoreData)) {
 			// TODO: Show error
 		} else {
 			NG_NOTIF("Saved \"{}\"", GetCurrentScoreName());
@@ -223,6 +220,6 @@ bool NVFileSystem::SaveScoreAs() {
 	if (savePath.empty())
 		return false;
 
-	currentScoreSavePath = savePath;
+	g_ScoreSavePath = savePath;
 	return SaveScore();
 }
