@@ -107,15 +107,6 @@ typedef BYTE uint8_t;
 #include <commdlg.h>
 #endif
 
-// Show an error
-#define ERROR(s, ...) FW::ShowError(PROGRAM_NAME " Error", FMT(s, ##__VA_ARGS__))
-// Show an error and close
-#define ERRORCLOSE(s, ...)  {  FW::ShowError(PROGRAM_NAME " Critical Error", FMT(s, ##__VA_ARGS__) + "\n" PROGRAM_NAME " will now exit."); EXIT(EXITCODE_BAD); }
-// Show a warning
-#define WARN(s, ...) FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__))
-// Show a warning with a yes/no choice
-#define WARN_YESNO(s, ...) FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__), true)
-
 #define MERGE_IDR_INNER(a, b) a##b
 #define MERGE_IDR(a, b) MERGE_IDR_INNER(a, b)
 
@@ -153,16 +144,31 @@ public: const type& name = _##name
 private: type _##name[size] = val; \
 public: const type* name = _##name
 
+#define CWIDEN(str) (L"" str)
+
+// Show an error
+#define ERROR(s, ...) FW::ShowError(PROGRAM_NAME " Error", FMT(s, ##__VA_ARGS__))
+
+// Show an error and close
+#define ERRORCLOSE(s, ...) FW::ShowError(PROGRAM_NAME " Critical Error", FMT(s, ##__VA_ARGS__), true);
+
+// Show a warning
+#define WARN(s, ...)		FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__))
+// Show a warning with a yes/no choice
+#define WARN_YESNO(s, ...)	FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__), true)
+
 // Framework functions
 namespace FW {
 	wstring Widen(string str);
-	string Narrow(wstring wstr);
+	string Flatten(wstring wstr);
 
-	void ShowError(string title, string text);
+	void ShowError(string title, string text, bool close = false);
+	void ShowError(string title, wstring text, bool close = false);
 
 	// yesNo will display "Yes" and "No" buttons and return the user's choice
 	//	otherwise the message will simply display "Ok" and return true
 	bool ShowWarning(string title, string text, bool yesNo = false); 
+	bool ShowWarning(string title, wstring text, bool yesNo = false); 
 
 	double GetCurTime();
 

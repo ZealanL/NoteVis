@@ -14,21 +14,34 @@ wstring FW::Widen(string str) {
 	return wstring(str.begin(), str.end());
 }
 
-string FW::Narrow(wstring wstr) {
+string FW::Flatten(wstring wstr) {
 	return string(wstr.begin(), wstr.end());
 }
 
-void FW::ShowError(string title, string text) {
+void FW::ShowError(string title, string text, bool close) {
+	ShowError(title, FW::Widen(text), close);
+}
+
+void FW::ShowError(string title, wstring text, bool close) {
 #ifdef PLAT_WINDOWS
-	MessageBoxA(0, ("Error: " + text).c_str(), title.c_str(), MB_ICONERROR);
+	wstring errorText = L"Error: " + text;
+	if (close)
+		errorText += L"\n" PROGRAM_NAME " will now exit.";
+	MessageBoxW(0, errorText.c_str(), FW::Widen(title).c_str(), MB_ICONERROR);
 #else
 	// TODO: Implement
 #endif
+	if (close)
+		EXIT(ERROR_SUCCESS);
 }
 
 bool FW::ShowWarning(string title, string text, bool yesNo) {
+	return ShowWarning(title, FW::Widen(text), yesNo);
+}
+
+bool FW::ShowWarning(string title, wstring text, bool yesNo) {
 #ifdef PLAT_WINDOWS
-	int result = MessageBoxA(0, text.c_str(), title.c_str(), yesNo ? (MB_ICONWARNING | MB_YESNO) : MB_ICONWARNING);
+	int result = MessageBoxW(0, text.c_str(), FW::Widen(title).c_str(), yesNo ? (MB_ICONWARNING | MB_YESNO) : MB_ICONWARNING);
 	return yesNo ? (result == IDYES) : true;
 #else
 	// TODO: Implement

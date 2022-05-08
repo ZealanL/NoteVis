@@ -91,8 +91,12 @@ bool NVFileSystem::SaveFile(wstring filePath, const ByteDataStream& dataIn) {
 	fs::path directoryPath = filePath;
 	directoryPath.remove_filename();
 
-	if (!fs::exists(directoryPath) && !fs::create_directories(directoryPath))
+	try {
+		if (!fs::exists(directoryPath) && !fs::create_directories(directoryPath))
+			return false;
+	} catch (std::exception& e) {
 		return false;
+	}
 
 	std::ofstream fileOut = std::ofstream(fullPath, std::ios::binary);
 	if (!fileOut.good())
@@ -172,8 +176,10 @@ bool NVFileSystem::OpenScore() {
 	fs::path openPath = FilePrompt("Open Score...", GetScoresPath(), "NoteVis Scores", SCORE_FILE_EXTENSION, false);
 
 	ByteDataStream scoreData;
-	if (!LoadFile(openPath, scoreData))
+	if (!LoadFile(openPath, scoreData)) {
+		ERROR(L"Failed to load score file from \"{}\".", openPath.wstring());
 		return false;
+	}
 
 	if (!TryCloseScore())
 		return false;
@@ -185,6 +191,7 @@ bool NVFileSystem::OpenScore() {
 		NG_NOTIF("Loaded \"{}\"", GetCurrentScoreName());
 		return true;
 	} else {
+		ERROR(L"Failed read score data from \"{}\".\nFile is likely corrupt.", openPath.wstring());
 		return false;
 	}
 }
@@ -205,7 +212,8 @@ bool NVFileSystem::SaveScore() {
 		ByteDataStream scoreData;
 		SerializeScore(scoreData);
 		if (!SaveFile(g_ScoreSavePath, scoreData)) {
-			// TODO: Show error
+			ERROR(L"Failed to save score to \"{}\".\n(Is it open elsewhere?)", g_ScoreSavePath.wstring());
+			return false;
 		} else {
 			NG_NOTIF("Saved \"{}\"", GetCurrentScoreName());
 			g_HasUnsavedChanges = false;
@@ -221,6 +229,7 @@ bool NVFileSystem::SaveScoreAs() {
 		try {
 			fs::create_directories(scoresPath);
 		} catch (std::exception& e) {
+			ERROR(L"Failed to create folder for scores at \"{}\".", scoresPath.wstring());
 			return false;
 		}
 	}
