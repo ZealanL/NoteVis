@@ -60,23 +60,28 @@ Area NoteGraph::GetNoteAreaScreen(RenderContext* ctx) {
 	return noteArea;
 }
 
-Vec NoteGraph::ToScreenPos(GraphPos graphPos, RenderContext* ctx) {
-	int relativeTime = graphPos.x - hScroll;
-	float outX = (relativeTime / 1000.f) * hZoom;
+// Rounded to an integer
+NoteTime NoteGraph::GetNoteTimePerPx() {
+	return (double)NOTETIME_PER_BEAT / (double)hZoom;
+}
 
+Vec NoteGraph::ToScreenPos(GraphPos graphPos, RenderContext* ctx) {
+	int noteTimePerPx = GetNoteTimePerPx();
 	auto noteAreaScreen = GetNoteAreaScreen(ctx);
 
+	float outX = graphPos.x / noteTimePerPx - hScroll / noteTimePerPx;
 	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * (noteAreaScreen.Height() * vScale);
-	return Vec(outX, outY) + noteAreaScreen.Center();
+	return (Vec(outX, outY) + noteAreaScreen.Center()).Rounded();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
+	int noteTimePerPx = GetNoteTimePerPx();
 
 	auto noteAreaScreen = GetNoteAreaScreen(ctx);
 
 	screenPos -= noteAreaScreen.Center();
 
-	NoteTime x = hScroll + (NoteTime)((NOTETIME_PER_BEAT * screenPos.x) / hZoom);
+	NoteTime x = (noteTimePerPx * (screenPos.x + (hScroll / noteTimePerPx)));
 
 	float height = noteAreaScreen.Height() * vScale;
 
@@ -192,20 +197,24 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 			if (mouseMoved) {
 
 				// How much distance from note-end to mouse will still count as "hovered"
-				// TODO: This should not do manual screensize-to-graphsize calculations, make a helper function
-				NoteTime extraNoteHoverPad = (GetNoteBaseHeadSizeScreen(ctx) * NOTETIME_PER_BEAT) / hZoom;
+				NoteTime extraNoteHoverPad = GetNoteBaseHeadSizeScreen(ctx) * GetNoteTimePerPx();
 
 				hoveredNote = NULL;
+				int lowestYDist = 1.5f; // You can select a note while hovering over the nearby slot
 				for (Note* note : *this) {
+
+					float yDist = fabs(note->key - mouseGraphPos.y);
+
 					if (
 						(mouseGraphPos.x >= note->time && mouseGraphPos.x < note->time + note->duration + extraNoteHoverPad) // X is overlapping
-						&& (mouseGraphKey == note->key) // Y is overlapping
+						&& yDist <= lowestYDist // Y is overlapping
 						) {
 
 						// Prioritize later notes
 						if (hoveredNote && note->time < hoveredNote->time)
 							continue;
 
+						lowestYDist = yDist;
 						hoveredNote = note;
 					}
 				}
@@ -544,7 +553,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 	for (int i = 0; i < KEY_AMOUNT; i++) {
 		auto screenY = ToScreenPos(GraphPos(0, i), ctx).y;
 
-		Draw::PixelPerfectLine(Vec(minDrawX, screenY), Vec(noteAreaScreen.max.x, screenY), Color(25, 25, 25));
+		Draw::Line(Vec(minDrawX, screenY), Vec(noteAreaScreen.max.x, screenY), Color(25, 25, 25));
 	}
 
 	// Vertical measure lines
@@ -556,12 +565,10 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 		// More alpha = more important line
 		int alpha = isMeasureLine ? 80 : (isBeatLine ? 45 : 15);
-
 		auto screenX = ToScreenPos(GraphPos(i, 0), ctx).x;
-
 		Color color = Color(255, 255, 255, alpha);
 
-		Draw::PixelPerfectLine(Vec(screenX, screenMin.y), Vec(screenX, screenMax.y), color);
+		Draw::Line(Vec(screenX, screenMin.y), Vec(screenX, screenMax.y), color);
 
 		// Measure numbers
 		if (isMeasureLine)
@@ -607,29 +614,20 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 			Vec screenPos = ToScreenPos(GraphPos(note->time, note->key), ctx);
 			float tailEndX = ToScreenPos(GraphPos(note->time + note->duration, 0), ctx).x;
 
-			// Align pixel-perfect
-			screenPos = screenPos.Rounded();
-
 			Color col = NoteColors::GetKeyColor(note->key);
-			Color tailCol = col;
 
 			float velocityRatio = powf(note->velocity / 255.f, 0.5f);
 			float headScale = 0.6f + velocityRatio;
 
 			col.a = 155 + (velocityRatio * 100);
-			tailCol.a = 55 + (velocityRatio * 200);
 
-			Vec headCenterPos = screenPos + Vec(noteHeadSize_half * headScale, 0);
-
-			if (isBeingPlayed) {
+			if (isBeingPlayed)
 				headScale *= 1.5f;
-			}
 
-			// Keep things pixel-perfect
-			headCenterPos = headCenterPos.Rounded();
+			int headHalfSize = noteHeadSize_half * headScale;
 
-			Area headArea = { headCenterPos - noteHeadSize_half * headScale, headCenterPos + noteHeadSize_half * headScale };
-			Area tailArea = { headCenterPos - Vec(0, noteTailGap), Vec(tailEndX, headCenterPos.y + noteTailGap) };
+			Area headArea = { screenPos - headHalfSize, screenPos + headHalfSize };
+			Area tailArea = { screenPos - Vec(0, noteTailGap), Vec(tailEndX, screenPos.y + noteTailGap) };
 			tailArea.min.x = MAX(tailArea.min.x, headArea.max.x);
 
 			if (isSelected) {
@@ -656,36 +654,36 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 			} else {
 				if (dimNonSelected) {
-					col = col.RatioBrighten(0.35f);
+					col = col.RatioBrighten(0.6f);
 				}
 			}
 
 			// Brighten hovered notes
 			if (hoveredNote == note)
-				col = col.RatioBrighten(1.5f);
+				col = col.RatioBrighten(1.3f);
 
 			// Black border for spacing
 			Draw::Rect(headArea.Expand(1), isBeingPlayed ? COL_WHITE : COL_BLACK);
 			Draw::Rect(tailArea.Expand(1), isBeingPlayed ? COL_WHITE : COL_BLACK);
 
-			// Draw note body
+			// Draw note head
 			Draw::Rect(headArea, col);
 
 			// In some cases, the tail might end before it starts, which means it's too short to be visible
 			if (tailArea.min.x < tailArea.max.x)
-				Draw::Rect(tailArea, tailCol);
+				Draw::Rect(tailArea, col);
 
 			// Really loud notes begin to have a halo/glow around their head
 			constexpr int HALO_THRESHOLD = 100;
 			int haloWidth = (MAX(0, note->velocity - HALO_THRESHOLD) / (255.f - HALO_THRESHOLD)) * noteHeadSize_half * 0.75f;
 			if (haloWidth > 0) {
-				Draw::Rect(headArea.Expand(haloWidth), Color(col.r, col.g, col.b, 50));
+				Draw::Rect(headArea.Expand(haloWidth), Color(col.r, col.g, col.b, 25));
 			}
 
 			// Hollow note head if black key
 			if (note->IsBlackKey()) {
 				int holeSize = noteHeadHollowSize_half * headScale;
-				Draw::Rect(headCenterPos - holeSize, headCenterPos + holeSize, COL_BLACK);
+				Draw::Rect(screenPos - holeSize, screenPos + holeSize, COL_BLACK);
 			}
 		}
 	}
