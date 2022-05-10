@@ -16,4 +16,6 @@ namespace Core {
 	void TryUserExit();
 
 	void ProcessEvent(SDL_Event& e);
+
+	BYTE GetCurrentKeybindFlags();
 }

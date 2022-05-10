@@ -1,11 +1,13 @@
 #include "Action.h"
 
 #include "../../Globals.h"
+#include "../Core.h"
 
 bool Keybind::IsDown() {
 	if (!IsValid())
 		return false;
-	return g_KeyboardState[SDL_GetScancodeFromKey(this->key)];
+
+	return Core::GetCurrentKeybindFlags() == this->flags && g_KeyboardState[SDL_GetScancodeFromKey(this->key)];
 }
 
 string Keybind::ToString() {

@@ -2,6 +2,7 @@
 #include "../NoteColors.h"
 #include "../../../Render/Draw/Draw.h"
 #include "../../../Globals.h"
+#include "../../Core.h"
 
 // NG_NOTIF but local
 #define NOTIF(s, ...) this->logNotifs.Add(std::format(s, ##__VA_ARGS__))
@@ -186,9 +187,11 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	bool shouldUpdateHistory = false;
 
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
-	bool isShiftDown = g_KeyboardState[SDL_SCANCODE_RSHIFT] || g_KeyboardState[SDL_SCANCODE_LSHIFT];
-	bool isControlDown = g_KeyboardState[SDL_SCANCODE_RCTRL] || g_KeyboardState[SDL_SCANCODE_LCTRL];
-	bool isAltDown = g_KeyboardState[SDL_SCANCODE_RALT] || g_KeyboardState[SDL_SCANCODE_LALT];
+	BYTE currentKeybindFlags = Core::GetCurrentKeybindFlags();
+
+	bool isControlDown = currentKeybindFlags & KBFLAG_CTRL;
+	bool isShiftDown = currentKeybindFlags & KBFLAG_SHIFT;
+	bool isAltDown = currentKeybindFlags & KBFLAG_ALT;
 
 	GraphPos mouseGraphPos = ToGraphPos(g_MousePos, ctx);
 	KeyInt mouseGraphKey = roundf(mouseGraphPos.y);
