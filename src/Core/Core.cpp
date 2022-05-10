@@ -75,3 +75,16 @@ void Core::ProcessEvent(SDL_Event& e) {
 	if (g_MousePos >= inputArea.min && g_MousePos <= inputArea.max && !g_WasImGuiMenuActive)
 		g_NoteGraph.UpdateWithInput(e, &renderCtx);
 }
+
+BYTE Core::GetCurrentKeybindFlags() {
+	auto& kb = g_KeyboardState;
+	bool isControlDown =	kb[SDL_SCANCODE_RCTRL]	|| kb[SDL_SCANCODE_LCTRL];
+	bool isShiftDown =		kb[SDL_SCANCODE_RSHIFT]	|| kb[SDL_SCANCODE_LSHIFT];
+	bool isAltDown =		kb[SDL_SCANCODE_RALT]	|| kb[SDL_SCANCODE_LALT];
+
+	BYTE flagsOut = 0;
+	if (isControlDown)	flagsOut |= KBFLAG_CTRL;
+	if (isShiftDown)	flagsOut |= KBFLAG_SHIFT;
+	if (isAltDown)		flagsOut |= KBFLAG_ALT;
+	return flagsOut;
+}
