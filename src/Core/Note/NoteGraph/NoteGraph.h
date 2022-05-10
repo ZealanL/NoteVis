@@ -139,6 +139,8 @@ public:
 
     void UpdatePlayOnRender();
 
+	void DrawScrollBar(RenderContext* ctx);
+
 	// For C++ iterator
 	auto begin() { return noteCache.begin(); }
 	auto end() { return noteCache.end(); }

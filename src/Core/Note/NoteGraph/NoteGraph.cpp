@@ -60,8 +60,11 @@ float NoteGraph::GetBottomBarHeight(RenderContext* ctx) {
 
 Area NoteGraph::GetNoteAreaScreen(RenderContext* ctx) {
 	Area noteArea = ctx->fullNoteGraphScreenArea;
-	noteArea.min.y += GetTopBarHeight(ctx);
-	noteArea.max.y -= GetBottomBarHeight(ctx);
+
+	float notePad = 8;
+
+	noteArea.min.y += GetTopBarHeight(ctx) + notePad;
+	noteArea.max.y -= GetBottomBarHeight(ctx) + notePad;
 	return noteArea;
 }
 
@@ -210,7 +213,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 					float yDist = fabs(note->key - mouseGraphPos.y);
 
 					if (
-						(mouseGraphPos.x >= note->time && mouseGraphPos.x < note->time + note->duration + extraNoteHoverPad) // X is overlapping
+						(mouseGraphPos.x >= note->time - extraNoteHoverPad && mouseGraphPos.x < note->time + note->duration + extraNoteHoverPad) // X is overlapping
 						&& yDist <= lowestYDist // Y is overlapping
 						) {
 
@@ -530,6 +533,14 @@ void NoteGraph::UpdatePlayOnRender() {
 	hScroll = state.playInfo.curGraphTime;
 }
 
+void NoteGraph::DrawScrollBar(RenderContext* ctx) {
+	Vec min = ctx->fullNoteGraphScreenArea.BottomLeft() - Vec(0, GetBottomBarHeight(ctx));
+	Vec max = ctx->fullNoteGraphScreenArea.BottomRight();
+
+	Area scrollBarArea = Area(min, max).Expand(-1);
+	Draw::ORect(scrollBarArea, COL_WHITE);
+}
+
 void NoteGraph::RenderNotes(RenderContext* ctx) {
 
 	if (currentMode == MODE_PLAY)
@@ -748,6 +759,7 @@ void NoteGraph::Render(RenderContext* ctx) {
 	Draw::Rect(ctx->fullNoteGraphScreenArea, COL_BLACK);
 
 	RenderNotes(ctx);
+	DrawScrollBar(ctx);
 
 	float logNotifWidth = MIN(ctx->fullNoteGraphScreenArea.Width() / 2.f, 400.f);
 	logNotifs.DrawAndUpdate(ctx->fullNoteGraphScreenArea.TopRight() - Vec(logNotifWidth + 4, 4), logNotifWidth);
