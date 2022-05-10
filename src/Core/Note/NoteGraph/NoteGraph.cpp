@@ -54,28 +54,32 @@ float NoteGraph::GetTopBarHeight(RenderContext* ctx) {
 	return height;
 }
 
+float NoteGraph::GetBottomBarHeight(RenderContext* ctx) {
+	return GetTopBarHeight(ctx);
+}
+
 Area NoteGraph::GetNoteAreaScreen(RenderContext* ctx) {
 	Area noteArea = ctx->fullNoteGraphScreenArea;
 	noteArea.min.y += GetTopBarHeight(ctx);
+	noteArea.max.y -= GetBottomBarHeight(ctx);
 	return noteArea;
 }
 
-// Rounded to an integer
-NoteTime NoteGraph::GetNoteTimePerPx() {
+double NoteGraph::GetNoteTimePerPx() {
 	return (double)NOTETIME_PER_BEAT / (double)hZoom;
 }
 
 Vec NoteGraph::ToScreenPos(GraphPos graphPos, RenderContext* ctx) {
-	int noteTimePerPx = GetNoteTimePerPx();
+	double noteTimePerPx = GetNoteTimePerPx();
 	auto noteAreaScreen = GetNoteAreaScreen(ctx);
 
-	float outX = graphPos.x / noteTimePerPx - hScroll / noteTimePerPx;
+	float outX = (NoteTime)(graphPos.x / noteTimePerPx) - (NoteTime)(hScroll / noteTimePerPx);
 	float outY = -((graphPos.y - (KEY_AMOUNT_SUB1_F / 2.f)) / KEY_AMOUNT_SUB1_F) * (noteAreaScreen.Height() * vScale);
 	return (Vec(outX, outY) + noteAreaScreen.Center()).Rounded();
 }
 
 GraphPos NoteGraph::ToGraphPos(Vec screenPos, RenderContext* ctx) {
-	int noteTimePerPx = GetNoteTimePerPx();
+	double noteTimePerPx = GetNoteTimePerPx();
 
 	auto noteAreaScreen = GetNoteAreaScreen(ctx);
 
@@ -260,7 +264,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 				if (isControlDown) {
 					// Horizontal zoom
 					hZoom *= 1 + (scrollDelta / (isShiftDown ? 1.f : 10.f));
-					hZoom = CLAMP(hZoom, 20, 2000);  
+					hZoom = CLAMP(hZoom, 20, 3000);  
 				} else {
 					// Horizontal scroll
 					hScroll += -scrollDelta * (isShiftDown ? 5000 : 500) / (hZoom / 100);

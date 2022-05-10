@@ -185,8 +185,8 @@ namespace FW {
 	template<typename T>
 	std::enable_if_t<std::is_integral_v<T>, T> IntSnap(T val, T snappingInterval) {
 		T a = (val / snappingInterval) * snappingInterval;
-		T b = val + snappingInterval;
-		return (val - a > val - b) ? a : b;
+		T b = a + snappingInterval;
+		return (abs(val - a) < abs(val - b)) ? a : b;
 	}
 
 	template<int SIZE>

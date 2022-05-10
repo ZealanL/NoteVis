@@ -95,9 +95,11 @@ public:
 	struct RenderContext {
 		Area fullNoteGraphScreenArea;
 	};
+
 	float GetTopBarHeight(RenderContext* ctx);
+	float GetBottomBarHeight(RenderContext* ctx);
 	Area GetNoteAreaScreen(RenderContext* ctx);
-    NoteTime GetNoteTimePerPx();
+    double GetNoteTimePerPx();
     Vec ToScreenPos(GraphPos graphPos, RenderContext* ctx);
 	GraphPos ToGraphPos(Vec screenPos, RenderContext* ctx);
 
