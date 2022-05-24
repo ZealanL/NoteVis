@@ -3,6 +3,7 @@
 #include "../../../Render/Draw/Draw.h"
 #include "../../../Globals.h"
 #include "../../Core.h"
+#include "../../MIDI/MIDI.h"
 
 // NG_NOTIF but local
 #define NOTIF(s, ...) this->logNotifs.Add(std::format(s, ##__VA_ARGS__))
@@ -170,6 +171,16 @@ bool NoteGraph::RemoveNote(Note* note) {
 void NoteGraph::ClearNotes() {
 	noteCache.Reset();
 	hoveredNote = NULL;
+}
+
+void NoteGraph::AddMIDIData(MIDIParseData& midiData) {
+	for (auto& note : midiData.notes)
+		AddNote(note);
+}
+
+void NoteGraph::MakeMIDIData(MIDIParseData& midiDataOut) {
+	for (auto& note : *this)
+		midiDataOut.notes.push_back(*note);
 }
 
 int NoteGraph::GetNoteCount() {

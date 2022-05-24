@@ -13,4 +13,5 @@ struct MIDIParseData {
 
 namespace MIDI {
 	bool ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut);
+    void WriteMidi(MIDIParseData& parseDataIn, ByteDataStream& bytesOut);
 }

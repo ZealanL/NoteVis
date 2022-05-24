@@ -3,8 +3,6 @@
 #include "Render/Renderer.h"
 #include "Core/UI/UI.h"
 
-// NOTE: Mostly from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_opengl3/main.cpp
-
 void RunMainLoop() {
 	while (true) {
 
@@ -77,7 +75,7 @@ int _main(vector<string> args) {
 				g_ARG_MaxHistoryMemSize = amount;
 				DLOG("Set history memory limit to {}mb", amount);
 			} catch (std::exception& e) {
-				ERRORCLOSE("Arg \"maxhistorymem\" should have a number from 1 to 8000");
+				FW::FatalError("Arg \"maxhistorymem\" should have a number from 1 to 8000");
 			}
 
 			break;
@@ -89,7 +87,7 @@ int _main(vector<string> args) {
 			break;
 		}
 
-		ERROR("Ignoring unknown command line argument \"{}\"", arg);
+		FW::ShowError("Ignoring unknown command line argument \"{}\"", arg);
 	}
 
 	// Initialize

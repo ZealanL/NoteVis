@@ -3,6 +3,7 @@
 #include "../../Core.h"
 #include "../UI.h"
 #include "../../NVFileSystem/NVFileSystem.h"
+#include "../../MIDI/MIDI.h"
 
 void SubMenu(string name, std::function<void()> runFunc, bool enabled = true) {
 	if (ImGui::BeginMenu(name.c_str(), enabled)) {
@@ -45,9 +46,51 @@ void MenuBar::Draw() {
 			Separator();
 
 			if (CustomOption("Load MIDI")) {
-				if (!g_NoteGraph.IsEmpty()) {
-					// TODO: Implement
-				} 
+				auto loadPath = NVFileSystem::FilePrompt("Load MIDI File...", "", "MIDI File", ".mid", false);
+
+				if (!loadPath.empty()) {
+					bool clearNoteGraph = false;
+					if (!g_NoteGraph.IsEmpty()) {
+						if (FW::WarnYesNo("MIDI Load Warning", "The note graph is not empty.\nClear it before loading this MIDI file?"))
+							clearNoteGraph = true;
+					}
+
+					ByteDataStream midiBytes;
+					if (NVFileSystem::LoadFile(loadPath, midiBytes)) {
+						MIDIParseData parseData;
+						if (MIDI::ParseMidi(midiBytes.GetIterator(), parseData)) {
+							if (clearNoteGraph)
+								g_NoteGraph.ClearEverything();
+
+							g_NoteGraph.AddMIDIData(parseData);
+							NG_NOTIF("Loaded MIDI file \"{}\".", loadPath.generic_string());
+						} else {
+							FW::ShowError("MIDI Load Failure", "This MIDI file is invalid/corrupted.");
+						}
+					} else {
+						FW::ShowError("MIDI File Load Error", std::format(L"Failed to access MIDI file at \"{}\".", loadPath.generic_wstring()));
+					}
+					
+				}
+			}
+			
+			if (CustomOption("Export MIDI")) {
+				auto savePath = NVFileSystem::FilePrompt("Export MIDI file to...", "", "MIDI File", ".mid", true);
+
+				if (!savePath.empty()) {
+					MIDIParseData midiData;
+					g_NoteGraph.MakeMIDIData(midiData);
+
+					ByteDataStream outBytes;
+					MIDI::WriteMidi(midiData, outBytes);
+
+					if (!NVFileSystem::SaveFile(savePath, outBytes)) {
+						FW::ShowError("Export MIDI Failure", 
+							std::format(L"Failed to save MIDI file to \"{}\", file access denied.", savePath.generic_wstring()));
+					} else {
+						NG_NOTIF("Exported to MIDI file \"{}\"", savePath.generic_string());
+					}
+				}
 			}
 		}
 	);

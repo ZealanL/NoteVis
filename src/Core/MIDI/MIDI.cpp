@@ -1,5 +1,6 @@
 #include "MIDI.h"
 #include "MIDIPlayer\MIDIPlayer.h"
+#include "../../../libremidi/writer.hpp"
 using namespace libremidi;
 
 bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut) {
@@ -99,4 +100,46 @@ bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseD
 
 
 	return true;
+}
+
+void MIDI::WriteMidi(MIDIParseData& parseDataIn, ByteDataStream& bytesOut) {
+	writer midiWriter;
+	midiWriter.ticksPerQuarterNote = NOTETIME_PER_BEAT;
+
+	midiWriter.tracks.resize(1);
+	midi_track& track = midiWriter.tracks[0];
+
+	vector<Note> sortedNotes = parseDataIn.notes;
+	std::sort(sortedNotes.begin(), sortedNotes.end(), [](Note& a, Note& b) {
+		return a.time < b.time;
+	});
+
+	NoteTime lastNoteEndTime = 0;
+	for (Note& note : sortedNotes) {
+		NoteTime timePad = note.time - (lastNoteEndTime);
+		lastNoteEndTime = note.time + note.duration;
+
+		track.push_back(track_event(
+			timePad, 0, message::note_on(1, note.key, note.velocity)
+		));
+
+		track.push_back(track_event(
+			note.duration, 0, message::note_off(1, note.key, note.velocity)
+		));
+
+		lastNoteEndTime = note.time + note.duration;
+	}
+
+	// libremidi requires an ostream, so we must make one...
+	// TODO: This is kind of messy, can it be made cleaner?
+	std::stringbuf tempBuf;
+	std::iostream tempStream = std::iostream(&tempBuf);
+
+	midiWriter.write(tempStream);
+
+	bytesOut.insert(
+		bytesOut.end(),
+		std::istream_iterator<char>(tempStream), 
+		std::istream_iterator<char>()
+	);
 }

@@ -19,7 +19,7 @@ MIDIPlayer::MIDIPlayer() {
 
 	MMRESULT result = midiOutOpen(&winMidiDevice, 0, NULL, NULL, CALLBACK_NULL);
 	if (result != MMSYSERR_NOERROR) {
-		ERRORCLOSE("MIDI Player failed to open MIDI output (error code: {}).", result);
+		FW::FatalError("MIDI Player failed to open MIDI output (error code: {}).", result);
 	}
 #endif
 }

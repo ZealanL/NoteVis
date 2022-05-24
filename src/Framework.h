@@ -105,6 +105,10 @@ typedef BYTE uint8_t;
 #include <windows.h>
 #include <shlobj.h>
 #include <commdlg.h>
+
+// Defines we don't want
+#undef IGNORE
+#undef ERROR
 #endif
 
 #define MERGE_IDR_INNER(a, b) a##b
@@ -146,29 +150,53 @@ public: const type* name = _##name
 
 #define CWIDEN(str) (L"" str)
 
-// Show an error
-#define ERROR(s, ...) FW::ShowError(PROGRAM_NAME " Error", FMT(s, ##__VA_ARGS__))
-
-// Show an error and close
-#define ERRORCLOSE(s, ...) FW::ShowError(PROGRAM_NAME " Critical Error", FMT(s, ##__VA_ARGS__), true);
-
-// Show a warning
-#define WARN(s, ...)		FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__))
-// Show a warning with a yes/no choice
-#define WARN_YESNO(s, ...)	FW::ShowWarning(PROGRAM_NAME " Warning", FMT(s, ##__VA_ARGS__), true)
-
 // Framework functions
 namespace FW {
 	wstring Widen(string str);
 	string Flatten(wstring wstr);
 
-	void ShowError(string title, string text, bool close = false);
-	void ShowError(string title, wstring text, bool close = false);
+	enum class MsgBoxType {
+#ifdef PLAT_WINDOWS
+		INFO = MB_ICONINFORMATION,
+		WARNING = MB_ICONWARNING,
+		ERROR = MB_ICONERROR,
+#else
+		// TODO: Implement
+#endif
+	};
 
-	// yesNo will display "Yes" and "No" buttons and return the user's choice
-	//	otherwise the message will simply display "Ok" and return true
-	bool ShowWarning(string title, string text, bool yesNo = false); 
-	bool ShowWarning(string title, wstring text, bool yesNo = false); 
+	enum class MsgBoxButtons {
+#ifdef PLAT_WINDOWS
+		OK = MB_OK,
+		OK_CANCEL = MB_OKCANCEL,
+		YES_NO = MB_YESNO,
+		YES_NO_CANCEL = MB_YESNOCANCEL,
+#else
+		// TODO: Implement
+#endif
+	};
+
+	enum class MsgBoxResult {
+#ifdef PLAT_WINDOWS
+		OK = IDOK, CANCEL = IDCANCEL, YES = IDYES, NO = IDNO, 
+		ABORT = IDABORT, IGNORE = IDIGNORE, RETRY = IDRETRY
+#else
+		// TODO: Implement
+#endif
+	};
+
+	MsgBoxResult ShowMsgBox(wstring title, wstring text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MsgBoxButtons::OK);
+	MsgBoxResult ShowMsgBox(string title, string text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MsgBoxButtons::OK);
+	void ShowError(string title, string text);
+	void ShowError(string title, wstring text);
+
+	bool WarnYesNo(string title, string text);
+
+	template<class ...Args>
+	void FatalError(Args... args) {
+		FW::ShowError("Fatal Error", std::format(args...) + "\n\n" PROGRAM_NAME " will now exit.");
+		EXIT(EXITCODE_BAD);
+	}
 
 	double GetCurTime();
 

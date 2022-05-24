@@ -42,7 +42,7 @@ fs::path NVFileSystem::FilePrompt(string promptTitle, fs::path initialPath, stri
 		ofn.lpstrTitle = wPromptTitle.c_str();
 		ofn.Flags = OFN_DONTADDTORECENT | (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
 
-		if (!GetOpenFileNameW(&ofn))
+		if (!(save ? GetSaveFileNameW : GetOpenFileNameW)(&ofn))
 			return fs::path();
 
 		resultPath = pathBuffer;
@@ -163,7 +163,7 @@ bool DeserializeScore(ByteDataStream& data) {
 
 bool NVFileSystem::TryCloseScore(bool force) {
 	if (!force && g_HasUnsavedChanges) {
-		if (!WARN_YESNO("This score has unsaved changes. Are you sure you'd like to close it?"))
+		if (!FW::WarnYesNo("Unsaved Changes", "This score has unsaved changes.\nClose it anyway?"))
 			return false;
 	}
 
@@ -173,11 +173,13 @@ bool NVFileSystem::TryCloseScore(bool force) {
 }
 
 bool NVFileSystem::OpenScore() {
+	constexpr auto ERROR_TITLE = "Score Loading Error";
+
 	fs::path openPath = FilePrompt("Open Score...", GetScoresPath(), "NoteVis Scores", SCORE_FILE_EXTENSION, false);
 
 	ByteDataStream scoreData;
 	if (!LoadFile(openPath, scoreData)) {
-		ERROR(L"Failed to load score file from \"{}\".", openPath.wstring());
+		FW::ShowError(ERROR_TITLE, std::format(L"Failed to load score file from \"{}\".", openPath.wstring()));
 		return false;
 	}
 
@@ -191,7 +193,7 @@ bool NVFileSystem::OpenScore() {
 		NG_NOTIF("Loaded \"{}\"", GetCurrentScoreName());
 		return true;
 	} else {
-		ERROR(L"Failed read score data from \"{}\".\nFile is likely corrupt.", openPath.wstring());
+		FW::ShowError(ERROR_TITLE, std::format(L"Failed read score data from \"{}\".\nFile is likely corrupt.", openPath.wstring()));
 		return false;
 	}
 }
@@ -206,13 +208,15 @@ string NVFileSystem::GetCurrentScoreName() {
 }
 
 bool NVFileSystem::SaveScore() {
+	constexpr auto ERROR_TITLE = "Score Saving Error";
+
 	if (g_ScoreSavePath.empty()) {
 		SaveScoreAs();
 	} else {
 		ByteDataStream scoreData;
 		SerializeScore(scoreData);
 		if (!SaveFile(g_ScoreSavePath, scoreData)) {
-			ERROR(L"Failed to save score to \"{}\".\n(Is it open elsewhere?)", g_ScoreSavePath.wstring());
+			FW::ShowError(ERROR_TITLE, std::format(L"Failed to save score to \"{}\".\nIs it open elsewhere?", g_ScoreSavePath.wstring()));
 			return false;
 		} else {
 			NG_NOTIF("Saved \"{}\"", GetCurrentScoreName());
@@ -224,12 +228,14 @@ bool NVFileSystem::SaveScore() {
 }
 
 bool NVFileSystem::SaveScoreAs() {
+	constexpr auto ERROR_TITLE = "Score Saving Error";
+
 	auto scoresPath = GetScoresPath();
 	if (!fs::exists(scoresPath)) {
 		try {
 			fs::create_directories(scoresPath);
 		} catch (std::exception& e) {
-			ERROR(L"Failed to create folder for scores at \"{}\".", scoresPath.wstring());
+			FW::ShowError(ERROR_TITLE, std::format(L"Failed to create folder for scores at \"{}\".", scoresPath.wstring()));
 			return false;
 		}
 	}

@@ -11,10 +11,11 @@ ImDrawList* Renderer::GetTargetDrawList() {
 }
 
 bool Renderer::Init() {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
-		ERRORCLOSE("Failed to initialize SDL (SDL error: %s)", SDL_GetError());
-		return EXITCODE_BAD;
-	}
+	// NOTE: Mostly from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_opengl3/main.cpp
+
+
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
+		FW::FatalError("Failed to initialize SDL (SDL error: %s)", SDL_GetError());
 
 	// GL 3.0 + GLSL 130
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
@@ -67,6 +68,8 @@ bool Renderer::Init() {
 	} else {
 		DLOG("Failed to find font to load, using ImGui default.");
 	}
+
+	return true;
 }
 
 void Renderer::Shutdown() {

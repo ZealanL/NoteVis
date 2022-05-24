@@ -118,6 +118,8 @@ public:
 	bool RemoveNote(Note* note); // Returns true if note was found and removed
 	void ClearNotes();
 
+	void AddMIDIData(struct MIDIParseData& midiDataOut);
+	void MakeMIDIData(struct MIDIParseData& midiDataOut);
 
 	void Render(RenderContext* ctx);
 

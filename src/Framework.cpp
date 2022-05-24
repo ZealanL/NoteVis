@@ -1,4 +1,5 @@
 #include "Framework.h"
+#include <SDL_syswm.h>
 
 auto startTime = std::chrono::system_clock::now();
 
@@ -18,31 +19,39 @@ string FW::Flatten(wstring wstr) {
 	return string(wstr.begin(), wstr.end());
 }
 
-void FW::ShowError(string title, string text, bool close) {
-	ShowError(title, FW::Widen(text), close);
+void FW::ShowError(string title, string text) {
+	ShowError(title, Widen(text));
 }
 
-void FW::ShowError(string title, wstring text, bool close) {
+void FW::ShowError(string title, wstring text) {
+	ShowMsgBox(Widen(title), text);
+}
+
+bool FW::WarnYesNo(string title, string text) {
+	return FW::ShowMsgBox(title, text, MsgBoxType::WARNING, MsgBoxButtons::YES_NO) == MsgBoxResult::YES;
+}
+
+FW::MsgBoxResult FW::ShowMsgBox(string title, string text, MsgBoxType type, MsgBoxButtons buttons) {
+	return FW::ShowMsgBox(Widen(title), Widen(text), type, buttons);
+}
+
+FW::MsgBoxResult FW::ShowMsgBox(wstring title, wstring text, MsgBoxType type, MsgBoxButtons buttons) {
+	using namespace FW;
+
+	// Not using SDL messagebox because SDL initialization is not guarenteed
+
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	bool getWindowInfoSucceeded = SDL_GetWindowWMInfo(SDL_GL_GetCurrentWindow(), &wmInfo);
+
 #ifdef PLAT_WINDOWS
-	wstring errorText = L"Error: " + text;
-	if (close)
-		errorText += L"\n" PROGRAM_NAME " will now exit.";
-	MessageBoxW(0, errorText.c_str(), FW::Widen(title).c_str(), MB_ICONERROR);
-#else
-	// TODO: Implement
-#endif
-	if (close)
-		EXIT(ERROR_SUCCESS);
-}
 
-bool FW::ShowWarning(string title, string text, bool yesNo) {
-	return ShowWarning(title, FW::Widen(text), yesNo);
-}
+	MsgBoxResult result = (MsgBoxResult)MessageBoxW(
+		getWindowInfoSucceeded ? wmInfo.info.win.window : NULL,
+		text.c_str(), title.c_str(),
+		(uint32)type | (uint32)buttons);
 
-bool FW::ShowWarning(string title, wstring text, bool yesNo) {
-#ifdef PLAT_WINDOWS
-	int result = MessageBoxW(0, text.c_str(), FW::Widen(title).c_str(), yesNo ? (MB_ICONWARNING | MB_YESNO) : MB_ICONWARNING);
-	return yesNo ? (result == IDYES) : true;
+	return result;
 #else
 	// TODO: Implement
 #endif
