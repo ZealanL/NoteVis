@@ -90,7 +90,7 @@ FW::HASH FW::HashData(const void* ptr, int size) {
 	return result;
 }
 
-size_t FW::HashStr(string str) {
+FW::HASH FW::HashStr(string str) {
 	return HashData(str.c_str(), str.size());
 }
 
