@@ -8,9 +8,9 @@
 #    include <jack/midiport.h>
 #    include <jack/ringbuffer.h>
 #  endif
-#  include "detail/midi_api.hpp"
-#  include "detail/semaphore.hpp"
-#  include "libremidi.hpp>
+#  include "./midi_api.hpp"
+#  include "./semaphore.hpp"
+#  include "../libremidi.hpp"
 
 //*********************************************************************//
 //  API: UNIX JACK

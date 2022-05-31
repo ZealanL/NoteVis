@@ -22,7 +22,7 @@ struct Vec {
 	}
 
 	float Length() const {
-		return std::sqrtf(x * x + y * y);
+		return sqrtf(x * x + y * y);
 	}
 
 	float LengthSqr() const {
@@ -32,7 +32,7 @@ struct Vec {
 	float Distance(Vec other) const {
 		float dx = x - other.x;
 		float dy = y - other.y;
-		return std::sqrtf(dx * dx + dy * dy);
+		return sqrtf(dx * dx + dy * dy);
 	}
 
 	float DistanceSqr(Vec other) const {
@@ -204,6 +204,7 @@ struct Area {
 	Area Row(float height, bool clip = false) {
 		Area newArea = *this;
 		newArea.max = newArea.min + (clip ? MIN(Height(), height) : height);
+		return newArea;
 	}
 
 	// Area is expanded outwards by a certain amount (or shrunk if negative)

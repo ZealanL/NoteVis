@@ -45,8 +45,8 @@ GBLVAR(NoteGraph, NoteGraph);
 GBLVAR(std::filesystem::path, ScoreSavePath);
 GBLVAR(bool, HasUnsavedChanges); // For "unsaved changes" warning
 
-GBLVAR(bool, KeyboardState[SDL_NUM_SCANCODES], {});
-GBLVAR(bool, MouseState[6], {});
+GBLVAR_V(bool, KeyboardState[SDL_NUM_SCANCODES], {});
+GBLVAR_V(bool, MouseState[6], {});
 
 #pragma endregion
 #undef GBLVAR

@@ -1,6 +1,6 @@
 #include "ZLibWrapper.h"
 
-#include <zlib.h>
+#include <zlib/zlib.h>
 
 uint64 ZLib::Compress(void* data, uint64 dataSize, void* compressedOutput) {
 	uLongf sizeOut;

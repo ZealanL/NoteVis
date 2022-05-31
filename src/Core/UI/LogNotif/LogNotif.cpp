@@ -3,7 +3,7 @@
 #include "../../../Render/Draw/Draw.h"
 
 void LogNotifList::Add(string text, double lifeDuration) {
-	_notifs.push_back(LogNotif(text, lifeDuration, lifeDuration / 4, CURRENT_TIME));
+	_notifs.push_back(LogNotif{ text, lifeDuration, lifeDuration / 4, CURRENT_TIME });
 	if (_notifs.size() > maxNotifs)
 		_notifs.pop_front();
 }

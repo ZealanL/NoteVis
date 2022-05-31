@@ -103,26 +103,15 @@ int _main(vector<string> args) {
 	return EXITCODE_GOOD;
 }
 
-#ifdef PLAT_WINDOWS
-#include <Windows.h>
-#include <shellapi.h>
-int WINAPI WinMain(
-	HINSTANCE hInstance,
-	HINSTANCE hPrevInstance,
-	LPSTR     lpCmdLine,
-	int       nShowCmd
-) {
-	int argCount;
-	LPWSTR* argsPtr = CommandLineToArgvW(GetCommandLineW(), &argCount);
+#undef main // Prevent SDL from overriding our main
 
+int main(int argc, const char* argv[]) {
 	vector<string> args;
-	args.reserve(argCount);
-
+	
 	// Parse command line arguments
 	// TODO: Make a clean system to do this
-	for (int i = 1; i < argCount; i++) {
-		wstring wArg = argsPtr[i];
-		string arg = string(wArg.begin(), wArg.end());
+	for (int i = 1; i < argc; i++) {
+		string arg = argv[i];
 
 		if (!args.empty() && args.back().front() == '-' && arg.front() != '-') {
 			// Last argument was prefixed by '-', this one isn't - it must be a subargument
@@ -134,4 +123,3 @@ int WINAPI WinMain(
 
 	return _main(args);
 }
-#endif

@@ -3,9 +3,9 @@
 
 // An RGBA color
 struct Color {
-	BYTE r, g, b, a;
+	byte r, g, b, a;
 
-	Color(BYTE r = 0, BYTE g = 0, BYTE b = 0, BYTE a = 255) {
+	Color(byte r = 0, byte g = 0, byte b = 0, byte a = 255) {
 		this->r = r;
 		this->g = g;
 		this->b = b;
@@ -33,7 +33,7 @@ struct Color {
 		);
 	}
 
-	Color WithAlpha(BYTE alpha) {
+	Color WithAlpha(byte alpha) {
 		return Color(r, g, b, alpha);
 	}
 
@@ -58,7 +58,7 @@ struct Color {
 // I would use ImGui utility functions but I might move off of ImGui at some future point
 struct HSVColor {
 	float h = 0, s = 1, v = 1;
-	BYTE alpha = 255;
+	byte alpha = 255;
 
 	HSVColor() {}
 

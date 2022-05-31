@@ -1,6 +1,8 @@
 #include "MIDI.h"
-#include "MIDIPlayer\MIDIPlayer.h"
-#include "../../../libremidi/writer.hpp"
+#include "MIDIPlayer/MIDIPlayer.h"
+#include "../../libremidi/writer.hpp"
+#include "../../libremidi/reader.hpp"
+#include "../../libremidi/libremidi.hpp"
 using namespace libremidi;
 
 bool MIDI::ParseMidi(ByteDataStream::ReadIterator bytesIn, MIDIParseData& parseDataOut) {
@@ -119,13 +121,13 @@ void MIDI::WriteMidi(MIDIParseData& parseDataIn, ByteDataStream& bytesOut) {
 		NoteTime timePad = note.time - (lastNoteEndTime);
 		lastNoteEndTime = note.time + note.duration;
 
-		track.push_back(track_event(
+		track.push_back(track_event{
 			timePad, 0, message::note_on(1, note.key, note.velocity)
-		));
+			});
 
-		track.push_back(track_event(
+		track.push_back(track_event{
 			note.duration, 0, message::note_off(1, note.key, note.velocity)
-		));
+			});
 
 		lastNoteEndTime = note.time + note.duration;
 	}

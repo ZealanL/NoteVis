@@ -2,8 +2,8 @@
 #include <CoreMIDI/CoreMIDI.h>
 #include <CoreServices/CoreServices.h>
 #include <cmath>
-#include "detail/midi_api.hpp"
-#include "libremidi.hpp"
+#include "./midi_api.hpp"
+#include "../libremidi.hpp"
 
 #if TARGET_OS_IPHONE
 #include <CoreAudio/CoreAudioTypes.h>

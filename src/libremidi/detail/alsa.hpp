@@ -3,8 +3,8 @@
 #include <atomic>
 #include <map>
 #include <pthread.h>
-#include "detail/midi_api.hpp"
-#include "libremidi.hpp"
+#include "./midi_api.hpp"
+#include "../libremidi.hpp"
 #include <sstream>
 #include <sys/time.h>
 #include <thread>

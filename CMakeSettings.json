@@ -1,0 +1,24 @@
+﻿{
+  "configurations": [
+    {
+      "name": "Win-x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DNV_WINDOWS=1 -DNV_DEBUG=1",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "Win-x64-Release",
+      "generator": "Ninja",
+      "configurationType": "MinSizeRel",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DNV_WINDOWS=1 -DNV_DEBUG=0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86_x64" ]
+    }
+  ]
+}

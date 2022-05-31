@@ -40,12 +40,12 @@ void Draw::OCircle(Vec center, Color color, float radius, float thickness) {
 
 void Draw::ConvexPoly(vector<Vec> points, Color color) {
 	if (!points.empty())
-		DL->AddConvexPolyFilled((ImVec2*)points.begin()._Ptr, points.size(), IMC(color));
+		DL->AddConvexPolyFilled((ImVec2*)&points.front(), points.size(), IMC(color));
 }
 
 void Draw::OPoly(vector<Vec> points, Color color, float thickness) {
 	if (!points.empty())
-		DL->AddPolyline((ImVec2*)points.begin()._Ptr, points.size(), IMC(color), ImDrawListFlags_AntiAliasedLines, thickness);
+		DL->AddPolyline((ImVec2*)&points.front(), points.size(), IMC(color), ImDrawListFlags_AntiAliasedLines, thickness);
 }
 
 Vec Draw::GetTextSize(string str, float wrapWidth) {
@@ -54,7 +54,7 @@ Vec Draw::GetTextSize(string str, float wrapWidth) {
 	return Vec(font->CalcTextSizeA(fontSize, FLT_MAX, wrapWidth, str.c_str()));
 }
 
-void Draw::Text(string str, Vec pos, Color color, Vec center, BYTE shadowAlpha) {
+void Draw::Text(string str, Vec pos, Color color, Vec center, byte shadowAlpha) {
 	if (!str.empty()) {
 		float fontSize = ImGui::GetFontSize();
 		auto font = ImGui::GetFont();

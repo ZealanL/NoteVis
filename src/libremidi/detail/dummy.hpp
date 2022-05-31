@@ -1,6 +1,6 @@
 #pragma once
-#include "detail/midi_api.hpp"
-#include "libremidi.hpp"
+#include "./midi_api.hpp"
+#include "../libremidi.hpp"
 
 namespace libremidi
 {

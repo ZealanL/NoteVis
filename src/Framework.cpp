@@ -1,5 +1,7 @@
 #include "Framework.h"
-#include <SDL_syswm.h>
+
+#include <locale>
+#include <codecvt>
 
 auto startTime = std::chrono::system_clock::now();
 
@@ -9,6 +11,14 @@ double FW::GetCurTime() {
 
 	double microsecs = duration_cast<microseconds>(timeSinceStartup).count();
     return microsecs / (1000.0 * 1000.0);
+}
+
+string FW::EncodeUTF8(wstring wstr) {
+	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(wstr);
+}
+
+wstring FW::DecodeUTF8(string wstr) {
+	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(wstr);
 }
 
 wstring FW::Widen(string str) {
@@ -28,33 +38,56 @@ void FW::ShowError(string title, wstring text) {
 }
 
 bool FW::WarnYesNo(string title, string text) {
-	return FW::ShowMsgBox(title, text, MsgBoxType::WARNING, MsgBoxButtons::YES_NO) == MsgBoxResult::YES;
+	return FW::ShowMsgBox(title, text, MsgBoxType::WARNING, MBBS_YES_NO) == MBB_YES;
 }
 
-FW::MsgBoxResult FW::ShowMsgBox(string title, string text, MsgBoxType type, MsgBoxButtons buttons) {
+FW::MsgBoxButton FW::ShowMsgBox(string title, string text, MsgBoxType type, MsgBoxButtons buttons) {
 	return FW::ShowMsgBox(Widen(title), Widen(text), type, buttons);
 }
 
-FW::MsgBoxResult FW::ShowMsgBox(wstring title, wstring text, MsgBoxType type, MsgBoxButtons buttons) {
+FW::MsgBoxButton FW::ShowMsgBox(wstring title, wstring text, MsgBoxType type, MsgBoxButtons buttons) {
 	using namespace FW;
 
-	// Not using SDL messagebox because SDL initialization is not guarenteed
+	string u8title = EncodeUTF8(title), u8text = EncodeUTF8(text);
 
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	bool getWindowInfoSucceeded = SDL_GetWindowWMInfo(SDL_GL_GetCurrentWindow(), &wmInfo);
+	constexpr const char* buttonNames[] = {
+		"INVALID", "Ok", "Cancel", "Yes", "No", "Abort", "Retry", "Ignore",
+	};
 
-#ifdef PLAT_WINDOWS
+	SASSERT(ARRAYSIZE(buttonNames) == MBB_AMOUNT, "buttonNames[] needs to be updated to match MsgBoxButtons enum");
 
-	MsgBoxResult result = (MsgBoxResult)MessageBoxW(
-		getWindowInfoSucceeded ? wmInfo.info.win.window : NULL,
-		text.c_str(), title.c_str(),
-		(uint32)type | (uint32)buttons);
+	vector<SDL_MessageBoxButtonData> sdlButtons;
+	for (int i = 0; i < MBB_AMOUNT; i++) {
+		if (buttons & (1<<i)) {
+			sdlButtons.push_back(
+				SDL_MessageBoxButtonData{
+					0,
+					i,
+					buttonNames[i]
+				}
+			);
+		}
+	}
 
-	return result;
-#else
-	// TODO: Implement
-#endif
+	// Make buttons appear in the right order
+	std::reverse(sdlButtons.begin(), sdlButtons.end());
+
+	ASSERT(!sdlButtons.empty());
+
+	// Casts are needed here to ensure compilation on different compilers
+	SDL_MessageBoxData messageBoxData = {
+		(uint32)type,
+		SDL_GL_GetCurrentWindow(),
+		(const char*)u8title.c_str(),
+		(const char*)u8text.c_str(),
+		(int32)sdlButtons.size(),
+		&sdlButtons.front(),
+		NULL
+	};
+
+	int buttonOut;
+	SDL_ShowMessageBox(&messageBoxData, &buttonOut);
+	return (MsgBoxButton)buttonOut;
 }
 
 string FW::TimeDurationToString(double time) {
@@ -85,7 +118,7 @@ FW::HASH FW::HashData(const void* ptr, int size) {
 	HASH result = 0;
 	constexpr HASH prime = 31;
 	for (HASH i = 0; i < size; ++i) {
-		result = ((BYTE*)ptr)[i] + (result * prime);
+		result = ((byte*)ptr)[i] + (result * prime);
 	}
 	return result;
 }

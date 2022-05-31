@@ -9,8 +9,8 @@
 #include <mmsystem.h>
 #include <mutex>
 #include <ostream>
-#include "detail/midi_api.hpp"
-#include "libremidi.hpp"
+#include "./midi_api.hpp"
+#include "../libremidi.hpp"
 #include <sstream>
 #include <thread>
 

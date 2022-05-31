@@ -2,8 +2,8 @@
 #define NOMINMAX 1
 #define WIN32_LEAN_AND_MEAN 1
 #include <mutex>
-#include "detail/midi_api.hpp"
-#include "libremidi.hpp"
+#include "./midi_api.hpp"
+#include "../libremidi.hpp"
 #include <string>
 #include <thread>
 #include <vector>

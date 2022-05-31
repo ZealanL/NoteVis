@@ -20,7 +20,6 @@
 #include <cassert>
 #include <string>
 #include <functional>
-#include <format>
 #include <vector>
 #include <stack>
 #include <queue>
@@ -49,56 +48,54 @@ using std::pair;
 #pragma endregion
 
 // SDL 2 + OpenGL
-#include <SDL.h>
-#include <SDL_opengl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+
+// fmt::format (in place of unstable std::format, which not all compilers support yet)
+#include <fmt/format.h>
+#include <fmt/xchar.h>
+#define FMT fmt::format
 
 // ImGui
-#include "../imgui/imgui.h"
-#include "../imgui/imgui_impl_opengl3.h"
-#include "../imgui/imgui_impl_sdl.h"
-
-// libremidi
-#include "../libremidi/libremidi.hpp"
-#include "../libremidi/reader.hpp"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_sdl.h"
 
 // Integer typedefs
 typedef int8_t	int8;	typedef uint8_t	 uint8;
 typedef int16_t int16;	typedef uint16_t uint16;
 typedef int32_t int32;	typedef uint32_t uint32;
 typedef int64_t int64;	typedef uint64_t uint64;
-typedef BYTE uint8_t;
+typedef uint8_t byte;
 
-// Debug logging
-#ifdef _DEBUG
-#define DLOG(s, ...) { std::cout << "> " << std::dec << std::format(s, ##__VA_ARGS__) << std::endl; }
-#else
-#define DLOG(s) {}
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__CYGWIN__)
+#define PLAT_WINDOWS
 #endif
 
-// String formatting
-#define FMT(s, ...) std::format(s, ##__VA_ARGS__)
-
-#if defined(WIN32) || defined(_WIN64) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#ifndef PLAT_WINDOWS
-#error PLAT_WINDOWS should be predefined for Windows builds
-#endif
-#else
-#error PLAT_WINDOWS should only be predefined for Windows builds
+#if defined(_WIN64) || defined(__x86_64__)
+#define PLAT_64
 #endif
 
-#if defined(_WIN64)
-#define IS_64BIT
-#endif
-
-#ifdef IS_64BIT
+#ifdef PLAT_64
 #define ARCH_LABEL "x64"
 #else
 #define ARCH_LABEL "x86"
 #endif
 
+#if _MSC_VER and !defined(__llvm__) and !defined(__clang__)
+#define PLAT_MSVC
+#endif
+
 #define EXITCODE_BAD 0
 #define EXITCODE_GOOD 1
 #define EXIT(code) exit(code)
+
+// Debug logging
+#ifdef _DEBUG
+#define DLOG FW::PrintConsoleLine
+#else
+#define DLOG(s, ...) {}
+#endif
 
 #ifdef PLAT_WINDOWS
 #define WIN32_LEAN_AND_MEAN
@@ -111,6 +108,10 @@ typedef BYTE uint8_t;
 #undef ERROR
 #endif
 
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(arr) (sizeof(arr)/sizeof(*arr))
+#endif
+
 #define MERGE_IDR_INNER(a, b) a##b
 #define MERGE_IDR(a, b) MERGE_IDR_INNER(a, b)
 
@@ -119,8 +120,8 @@ typedef BYTE uint8_t;
 struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 
 // Debug assertion
-#define SASSERT(e) static_assert(e)
-#define ASSERT(e) assert(e)
+#define SASSERT static_assert
+#define ASSERT assert
 #define IASSERT(e, s) ASSERT(e >= 0 && e < s) // Index assert 
 
 // Quick max/min/clamp logic macros
@@ -135,7 +136,11 @@ struct __RFOI { __RFOI(std::function<void()> fnRunFunc) { fnRunFunc(); } };
 #define FSNAP(val, roundingInterval) fmodf(val, roundingInterval)
 
 // For scoped enums that shouldn't be classes
+#ifdef PLAT_MSVC
 #define ENUM_SCOPE(name, ...) namespace name { enum {##__VA_ARGS__}; }
+#else
+#define ENUM_SCOPE(name, ...) namespace name { enum {__VA_ARGS__}; }
+#endif
 
 #define CURRENT_TIME (FW::GetCurTime())
 
@@ -152,41 +157,39 @@ public: const type* name = _##name
 
 // Framework functions
 namespace FW {
+	string EncodeUTF8(wstring wstr);
+	wstring DecodeUTF8(string wstr);
 	wstring Widen(string str);
 	string Flatten(wstring wstr);
 
-	enum class MsgBoxType {
-#ifdef PLAT_WINDOWS
-		INFO = MB_ICONINFORMATION,
-		WARNING = MB_ICONWARNING,
-		ERROR = MB_ICONERROR,
-#else
-		// TODO: Implement
-#endif
+	enum class MsgBoxType : uint32 {
+		INFO = SDL_MESSAGEBOX_INFORMATION,
+		WARNING = SDL_MESSAGEBOX_WARNING,
+		ERROR = SDL_MESSAGEBOX_ERROR,
 	};
 
-	enum class MsgBoxButtons {
-#ifdef PLAT_WINDOWS
-		OK = MB_OK,
-		OK_CANCEL = MB_OKCANCEL,
-		YES_NO = MB_YESNO,
-		YES_NO_CANCEL = MB_YESNOCANCEL,
-#else
-		// TODO: Implement
-#endif
+	enum MsgBoxButton : uint32 {
+		MBB_INVALID,
+		MBB_OK,
+		MBB_CANCEL,
+		MBB_YES,
+		MBB_NO,
+		MBB_ABORT,
+		MBB_IGNORE,
+		MBB_RETRY,
+
+		MBB_AMOUNT,
 	};
 
-	enum class MsgBoxResult {
-#ifdef PLAT_WINDOWS
-		OK = IDOK, CANCEL = IDCANCEL, YES = IDYES, NO = IDNO, 
-		ABORT = IDABORT, IGNORE = IDIGNORE, RETRY = IDRETRY
-#else
-		// TODO: Implement
-#endif
+	enum MsgBoxButtons : uint32 {
+		MBBS_OK = (1 << MBB_OK),
+		MBBS_OK_CANCEL = (1 << MBB_OK) | (1 << MBB_CANCEL),
+		MBBS_YES_NO = (1 << MBB_YES) | (1 << MBB_NO),
+		MBBS_YES_NO_CANCEL = (1 << MBB_YES) | (1 << MBB_NO) | (1 << MBB_CANCEL),
 	};
 
-	MsgBoxResult ShowMsgBox(wstring title, wstring text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MsgBoxButtons::OK);
-	MsgBoxResult ShowMsgBox(string title, string text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MsgBoxButtons::OK);
+	MsgBoxButton ShowMsgBox(wstring title, wstring text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MBBS_OK);
+	MsgBoxButton ShowMsgBox(string title, string text, MsgBoxType type = MsgBoxType::INFO, MsgBoxButtons buttons = MBBS_OK);
 	void ShowError(string title, string text);
 	void ShowError(string title, wstring text);
 
@@ -194,7 +197,7 @@ namespace FW {
 
 	template<class ...Args>
 	void FatalError(Args... args) {
-		FW::ShowError("Fatal Error", std::format(args...) + "\n\n" PROGRAM_NAME " will now exit.");
+		FW::ShowError("Fatal Error", FMT(args...) + "\n\n" PROGRAM_NAME " will now exit.");
 		EXIT(EXITCODE_BAD);
 	}
 
@@ -225,6 +228,12 @@ namespace FW {
 			result = data[i] + (result * prime);
 		}
 		return result;
+	}
+
+	template<typename... Args>
+	void PrintConsoleLine(Args&&... args) {
+		auto formatResult = FMT(args...);
+		std::wcout << wstring(formatResult.begin(), formatResult.end()) << std::endl;
 	}
 
 	// Compile-time string hashing

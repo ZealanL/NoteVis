@@ -19,7 +19,7 @@ void ByteDataStream::WriteToFileStream(std::ofstream& streamOut) const {
 
 bool ByteDataStream::Compress() {
 	uint64 maxCompressedSize = ZLib::GetMaxCompressedSize(this->size());
-	BYTE* compressedData = (BYTE*)malloc(maxCompressedSize);
+	byte* compressedData = (byte*)malloc(maxCompressedSize);
 	uint64 compressedSize = ZLib::Compress(this->GetBasePointer(), this->size(), compressedData);
 
 	if (compressedSize) {
@@ -45,7 +45,7 @@ bool ByteDataStream::Decompress() {
 		return true;
 	}
 
-	BYTE* decompressedData = (BYTE*)malloc(decompressedSize);
+	byte* decompressedData = (byte*)malloc(decompressedSize);
 
 	uint64 actualDecompressedSize = ZLib::Decompress(this->GetBasePointer() + sizeof(uint64), this->size() - sizeof(uint64), decompressedData);
 

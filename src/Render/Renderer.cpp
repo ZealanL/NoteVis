@@ -2,7 +2,7 @@
 #include "../Core/Core.h"
 #include "Draw/Draw.h"
 #include "../Core/NVFileSystem/NVFileSystem.h"
-#include "../../imgui/imgui_internal.h"
+#include "../imgui/imgui_internal.h"
 
 // Draw list to be used for draw functions
 ImDrawList* targetDrawList = NULL;
@@ -101,7 +101,7 @@ void Renderer::BeginFrame() {
 void Renderer::EndFrame() {
 	if (g_ARG_DevMode) { // Show render stats
 		Draw::Text(
-			std::format("{} fps\n{}", devRenderStats.fps, FW::TimeDurationToString(devRenderStats.averageDrawTimePerFrame)),
+			FMT("{} fps\n{}", devRenderStats.fps, FW::TimeDurationToString(devRenderStats.averageDrawTimePerFrame)),
 			Vec(GetWindowSize().x - 8, 8 + ImGui::GetFrameHeight()), COL_WHITE, Vec(1, 0), 100
 		);
 	}

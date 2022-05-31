@@ -5,11 +5,18 @@
 #include "../NoteStorageCache/NoteStorageCache.h"
 
 struct GraphPos {
-	NoteTime x;
-	float y;
+	NoteTime x = 0;
+	float y = 0;
+
+	GraphPos() = default;
+	GraphPos(NoteTime x, float y) : x(x), y(y) {}
 
 	friend bool operator==(const GraphPos& a, const GraphPos& b) {
 		return a.x == b.x && a.y == b.y;
+	}
+
+	friend bool operator!=(const GraphPos& a, const GraphPos& b) {
+		return a != b;
 	}
 };
 
@@ -90,7 +97,7 @@ public:
 	int snappingTime = NOTETIME_PER_BEAT / 4;
 
 	// Returns true if was handled
-	bool TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags);
+	bool TryHandleSpecialKeyEvent(SDL_Keycode key, byte kbFlags);
 
 	struct RenderContext {
 		Area fullNoteGraphScreenArea;

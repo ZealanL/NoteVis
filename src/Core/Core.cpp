@@ -21,6 +21,27 @@ NoteGraph::RenderContext GetNoteGraphRenderCtx() {
 }
 
 void Core::OnRender() {
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+
+		std::ifstream midiDataIn("C:\\Users\\admin\\Downloads\\Mephisto waltz_Duepree10.MID", std::ios::binary);
+		ASSERT(midiDataIn.good());
+		ByteDataStream inData;
+		inData.ReadFromFileStream(midiDataIn);
+
+		MIDIParseData parseData;
+		if (MIDI::ParseMidi(inData.GetIterator(), parseData)) {
+			DLOG("Notes read: {}", parseData.notes.size());
+		} else {
+			ASSERT(false);
+		}
+
+		for (Note note : parseData.notes) {
+			g_NoteGraph.AddNote(note);
+		}
+	}
+
 	auto renderCtx = GetNoteGraphRenderCtx();
 	g_NoteGraph.Render(&renderCtx);
 }
@@ -43,7 +64,7 @@ void Core::ProcessEvent(SDL_Event& e) {
 	{
 		SDL_Keycode pressedKey = e.key.keysym.sym;
 		auto keyMods = e.key.keysym.mod;
-		BYTE kbFlags = 0;
+		byte kbFlags = 0;
 		kbFlags |= KBFLAG_CTRL * ((keyMods & KMOD_CTRL) > 0);
 		kbFlags |= KBFLAG_SHIFT * ((keyMods & KMOD_SHIFT) > 0);
 		kbFlags |= KBFLAG_ALT * ((keyMods & KMOD_ALT) > 0);
@@ -76,13 +97,13 @@ void Core::ProcessEvent(SDL_Event& e) {
 		g_NoteGraph.UpdateWithInput(e, &renderCtx);
 }
 
-BYTE Core::GetCurrentKeybindFlags() {
+byte Core::GetCurrentKeybindFlags() {
 	auto& kb = g_KeyboardState;
 	bool isControlDown =	kb[SDL_SCANCODE_RCTRL]	|| kb[SDL_SCANCODE_LCTRL];
 	bool isShiftDown =		kb[SDL_SCANCODE_RSHIFT]	|| kb[SDL_SCANCODE_LSHIFT];
 	bool isAltDown =		kb[SDL_SCANCODE_RALT]	|| kb[SDL_SCANCODE_LALT];
 
-	BYTE flagsOut = 0;
+	byte flagsOut = 0;
 	if (isControlDown)	flagsOut |= KBFLAG_CTRL;
 	if (isShiftDown)	flagsOut |= KBFLAG_SHIFT;
 	if (isAltDown)		flagsOut |= KBFLAG_ALT;

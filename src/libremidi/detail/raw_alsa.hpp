@@ -1,10 +1,10 @@
 #pragma once
 #include <alsa/asoundlib.h>
 #include <ostream>
-#include "libremidi/detail/dummy.hpp"
-#include "libremidi/detail/midi_api.hpp"
-#include "libremidi/detail/raw_alsa_helpers.hpp"
-#include "libremidi/libremidi.hpp"
+#include "dummy.hpp"
+#include "midi_api.hpp"
+#include "raw_alsa_helpers.hpp"
+#include "libremidi.hpp"
 #include <thread>
 #include <atomic>
 #include <sstream>

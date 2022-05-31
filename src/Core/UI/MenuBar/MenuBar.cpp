@@ -68,7 +68,7 @@ void MenuBar::Draw() {
 							FW::ShowError("MIDI Load Failure", "This MIDI file is invalid/corrupted.");
 						}
 					} else {
-						FW::ShowError("MIDI File Load Error", std::format(L"Failed to access MIDI file at \"{}\".", loadPath.generic_wstring()));
+						FW::ShowError("MIDI File Load Error", FMT(L"Failed to access MIDI file at \"{}\".", loadPath.generic_wstring()));
 					}
 					
 				}
@@ -85,8 +85,11 @@ void MenuBar::Draw() {
 					MIDI::WriteMidi(midiData, outBytes);
 
 					if (!NVFileSystem::SaveFile(savePath, outBytes)) {
-						FW::ShowError("Export MIDI Failure", 
-							std::format(L"Failed to save MIDI file to \"{}\", file access denied.", savePath.generic_wstring()));
+						FW::ShowError(
+							"Export MIDI Failure", 
+							FMT(L"Failed to save MIDI file to \"{}\", file access denied.", 
+								savePath.generic_wstring())
+						);
 					} else {
 						NG_NOTIF("Exported to MIDI file \"{}\"", savePath.generic_string());
 					}

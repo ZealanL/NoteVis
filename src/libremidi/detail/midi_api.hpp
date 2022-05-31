@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
-#include "libremidi.hpp"
-#include "detail/midi_queue.hpp"
+#include "../libremidi.hpp"
+#include "midi_queue.hpp"
 #include <string_view>
 
 namespace libremidi

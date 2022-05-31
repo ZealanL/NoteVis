@@ -1,9 +1,11 @@
 #include "MIDIPlayer.h"
 
-struct MIDIMessage {
-	BYTE data[4] = { 0, 0, 0, 0 };
+#include "../../../libremidi/libremidi.hpp"
 
-	MIDIMessage(std::initializer_list<BYTE> data) {
+struct MIDIMessage {
+	byte data[4] = { 0, 0, 0, 0 };
+
+	MIDIMessage(std::initializer_list<byte> data) {
 		ASSERT(data.size() <= 4);
 		memcpy(this->data, data.begin(), data.size());
 	}
@@ -33,14 +35,14 @@ MIDIPlayer::~MIDIPlayer() {
 }
 
 void MIDIPlayer::NoteOn(KeyInt key, VelInt vel) {
-	auto msg = MIDIMessage({ (BYTE)libremidi::message_type::NOTE_ON, (BYTE)(key + KEYS_PER_OCTAVE), (BYTE)(vel/2), NULL });
+	auto msg = MIDIMessage({ (byte)libremidi::message_type::NOTE_ON, (byte)(key + KEYS_PER_OCTAVE), (byte)(vel/2), NULL });
 #ifdef PLAT_WINDOWS
 	midiOutShortMsg(winMidiDevice, msg.AsInt());
 #endif
 }
 
 void MIDIPlayer::NoteOff(KeyInt key) {
-	auto msg = MIDIMessage({ (BYTE)libremidi::message_type::NOTE_OFF, (BYTE)(key + KEYS_PER_OCTAVE), NULL, NULL });
+	auto msg = MIDIMessage({ (byte)libremidi::message_type::NOTE_OFF, (byte)(key + KEYS_PER_OCTAVE), NULL, NULL });
 #ifdef PLAT_WINDOWS
 	midiOutShortMsg(winMidiDevice, msg.AsInt());
 #endif

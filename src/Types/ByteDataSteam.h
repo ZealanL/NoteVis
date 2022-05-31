@@ -2,7 +2,7 @@
 #include "../Framework.h"
 
 // Steam of bytes for serialization
-class ByteDataStream : public vector<BYTE> {
+class ByteDataStream : public vector<byte> {
 public:
 	struct ReadIterator {
 		const ByteDataStream* stream;
@@ -37,13 +37,13 @@ public:
 		string ReadString();
 	};
 
-	BYTE* GetBasePointer() const {
-		return this->empty() ? NULL : this->begin()._Ptr;
+	byte* GetBasePointer() const {
+		return this->empty() ? (NULL) : (byte*)&(this->front());
 	}
 
 	template <typename T>
 	void Write(T object) {
-		this->insert(this->end(), (BYTE*)&object, ((BYTE*)&object) + sizeof(T));
+		this->insert(this->end(), (byte*)&object, ((byte*)&object) + sizeof(T));
 	}
 
 	void WriteString(string str) {
@@ -83,7 +83,7 @@ public:
 // TODO: Implement
 class ByteDataStreamDiff {
 public:
-	vector<pair<size_t, BYTE>> additions;
+	vector<pair<size_t, byte>> additions;
 	vector<size_t> removals;
-	vector<pair<size_t, BYTE>> changes;
+	vector<pair<size_t, byte>> changes;
 };

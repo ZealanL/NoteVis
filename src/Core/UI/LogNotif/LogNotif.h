@@ -17,7 +17,7 @@ struct LogNotif {
 		return startTime > CURRENT_TIME || GetTimeAlive() > lifeDuration;
 	}
 
-	BYTE GetAlpha() {
+	byte GetAlpha() {
 		if (IsExpired()) {
 			return 255;
 		} else {

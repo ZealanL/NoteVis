@@ -1,6 +1,9 @@
 #include "NVFileSystem.h"
 #include "../Core.h"
-#include <SDL_syswm.h>
+
+#ifdef PLAT_WINDOWS
+#include <SDL2/SDL_syswm.h>
+#endif
 
 // Written at the start of NoteVis score files
 typedef uint32 NvMagicInt;
@@ -74,9 +77,8 @@ fs::path NVFileSystem::GetScoresPath() {
 	return GetDataPath() / "Scores";
 }
 
-
-bool NVFileSystem::LoadFile(wstring fileName, ByteDataStream& dataOut) {
-	std::ifstream fileIn = std::ifstream(fileName, std::ios::binary);
+bool NVFileSystem::LoadFile(fs::path filePath, ByteDataStream& dataOut) {
+	std::ifstream fileIn = std::ifstream(filePath, std::ios::binary);
 	if (!fileIn.good())
 		return false;
 
@@ -86,7 +88,7 @@ bool NVFileSystem::LoadFile(wstring fileName, ByteDataStream& dataOut) {
 	return true;
 }
 
-bool NVFileSystem::SaveFile(wstring filePath, const ByteDataStream& dataIn) {
+bool NVFileSystem::SaveFile(fs::path filePath, const ByteDataStream& dataIn) {
 	fs::path fullPath = filePath;
 	fs::path directoryPath = filePath;
 	directoryPath.remove_filename();
@@ -109,12 +111,12 @@ bool NVFileSystem::SaveFile(wstring filePath, const ByteDataStream& dataIn) {
 	return true;
 }
 
-bool NVFileSystem::SaveDataFile(wstring fileName, const ByteDataStream& dataIn) {
-	return SaveDataFile(fs::relative(fileName, GetDataPath()), dataIn);
+bool NVFileSystem::SaveDataFile(fs::path filePath, const ByteDataStream& dataIn) {
+	return SaveDataFile(fs::relative(filePath, GetDataPath()), dataIn);
 }
 
-bool NVFileSystem::LoadDataFile(wstring fileName, ByteDataStream& dataOut) {
-	return LoadFile(fs::relative(fileName, GetDataPath()), dataOut);
+bool NVFileSystem::LoadDataFile(fs::path filePath, ByteDataStream& dataOut) {
+	return LoadFile(fs::relative(filePath, GetDataPath()), dataOut);
 }
 
 void SerializeScore(ByteDataStream& out) {
@@ -179,7 +181,7 @@ bool NVFileSystem::OpenScore() {
 
 	ByteDataStream scoreData;
 	if (!LoadFile(openPath, scoreData)) {
-		FW::ShowError(ERROR_TITLE, std::format(L"Failed to load score file from \"{}\".", openPath.wstring()));
+		FW::ShowError(ERROR_TITLE, FMT(L"Failed to load score file from \"{}\".", openPath.wstring()));
 		return false;
 	}
 
@@ -193,7 +195,7 @@ bool NVFileSystem::OpenScore() {
 		NG_NOTIF("Loaded \"{}\"", GetCurrentScoreName());
 		return true;
 	} else {
-		FW::ShowError(ERROR_TITLE, std::format(L"Failed read score data from \"{}\".\nFile is likely corrupt.", openPath.wstring()));
+		FW::ShowError(ERROR_TITLE, FMT(L"Failed read score data from \"{}\".\nFile is likely corrupt.", openPath.wstring()));
 		return false;
 	}
 }
@@ -216,7 +218,7 @@ bool NVFileSystem::SaveScore() {
 		ByteDataStream scoreData;
 		SerializeScore(scoreData);
 		if (!SaveFile(g_ScoreSavePath, scoreData)) {
-			FW::ShowError(ERROR_TITLE, std::format(L"Failed to save score to \"{}\".\nIs it open elsewhere?", g_ScoreSavePath.wstring()));
+			FW::ShowError(ERROR_TITLE, FMT(L"Failed to save score to \"{}\".\nIs it open elsewhere?", g_ScoreSavePath.wstring()));
 			return false;
 		} else {
 			NG_NOTIF("Saved \"{}\"", GetCurrentScoreName());
@@ -235,7 +237,7 @@ bool NVFileSystem::SaveScoreAs() {
 		try {
 			fs::create_directories(scoresPath);
 		} catch (std::exception& e) {
-			FW::ShowError(ERROR_TITLE, std::format(L"Failed to create folder for scores at \"{}\".", scoresPath.wstring()));
+			FW::ShowError(ERROR_TITLE, FMT(L"Failed to create folder for scores at \"{}\".", scoresPath.wstring()));
 			return false;
 		}
 	}

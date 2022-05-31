@@ -5,10 +5,12 @@
 #include "../../Core.h"
 #include "../../MIDI/MIDI.h"
 
-// NG_NOTIF but local
-#define NOTIF(s, ...) this->logNotifs.Add(std::format(s, ##__VA_ARGS__))
 
-bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, BYTE kbFlags) {
+// NG_NOTIF but local
+#define NOTIF(s, ...) this->logNotifs.Add(FMT(s, ##__VA_ARGS__))
+#undef NG_NOTIF
+
+bool NoteGraph::TryHandleSpecialKeyEvent(SDL_Keycode key, byte kbFlags) {
 
 	// Move by interval
 	if (!noteCache.selected.empty() && key >= SDLK_2 && key <= SDLK_9) {
@@ -198,7 +200,7 @@ void NoteGraph::UpdateWithInput(SDL_Event& e, RenderContext* ctx) {
 	bool shouldUpdateHistory = false;
 
 	bool isLMouseDown = g_MouseState[SDL_BUTTON_LEFT];
-	BYTE currentKeybindFlags = Core::GetCurrentKeybindFlags();
+	byte currentKeybindFlags = Core::GetCurrentKeybindFlags();
 
 	bool isControlDown = currentKeybindFlags & KBFLAG_CTRL;
 	bool isShiftDown = currentKeybindFlags & KBFLAG_SHIFT;
@@ -724,7 +726,7 @@ void NoteGraph::RenderNotes(RenderContext* ctx) {
 		for (int i = 0; i < 2; i++) {
 			bool activePlayhead = i == 1;
 
-			BYTE alpha;
+			byte alpha;
 			if (activePlayhead) {
 				alpha = 240;
 			} else {

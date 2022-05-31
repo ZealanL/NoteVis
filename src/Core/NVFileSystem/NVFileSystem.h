@@ -10,11 +10,11 @@ namespace NVFileSystem {
 	std::filesystem::path GetScoresPath();
 	string GetCurrentScoreName();
 
-	bool LoadDataFile(wstring fileName, ByteDataStream& dataOut);
-	bool SaveDataFile(wstring fileName, const ByteDataStream& dataIn);
+	bool LoadDataFile(std::filesystem::path filePath, ByteDataStream& dataOut);
+	bool SaveDataFile(std::filesystem::path filePath, const ByteDataStream& dataIn);
 
-	bool LoadFile(wstring filePath, ByteDataStream& dataOut);
-	bool SaveFile(wstring filePath, const ByteDataStream& dataIn);
+	bool LoadFile(std::filesystem::path filePath, ByteDataStream& dataOut);
+	bool SaveFile(std::filesystem::path filePath, const ByteDataStream& dataIn);
 
 	// Returns true if user allowed score to close
 	// force: Close regardless of unsaved changes (will not prompt user)

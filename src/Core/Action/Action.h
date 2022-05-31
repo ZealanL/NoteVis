@@ -3,14 +3,14 @@
 
 struct Keybind {
 	SDL_Keycode key;
-	BYTE flags;
+	byte flags;
 
 	Keybind() {
 		this->key = 0;
 		this->flags = 0;
 	}
 
-	Keybind(SDL_Keycode key, BYTE flags = 0) {
+	Keybind(SDL_Keycode key, byte flags = 0) {
 		this->key = key;
 		this->flags = flags;
 	}
@@ -19,7 +19,7 @@ struct Keybind {
 		return key > 0;
 	}
 
-	bool HasFlag(BYTE flag) {
+	bool HasFlag(byte flag) {
 		return flags & flag;
 	}
 
@@ -69,7 +69,7 @@ public:
 };
 
 // Keybind flags
-enum : BYTE {
+enum : byte {
 	KBFLAG_CTRL = (1 << 0),
 	KBFLAG_ALT = (1 << 1),
 	KBFLAG_SHIFT = (1 << 2),
