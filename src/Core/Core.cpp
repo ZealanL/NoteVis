@@ -21,27 +21,6 @@ NoteGraph::RenderContext GetNoteGraphRenderCtx() {
 }
 
 void Core::OnRender() {
-	static bool loaded = false;
-	if (!loaded) {
-		loaded = true;
-
-		std::ifstream midiDataIn("C:\\Users\\admin\\Downloads\\Mephisto waltz_Duepree10.MID", std::ios::binary);
-		ASSERT(midiDataIn.good());
-		ByteDataStream inData;
-		inData.ReadFromFileStream(midiDataIn);
-
-		MIDIParseData parseData;
-		if (MIDI::ParseMidi(inData.GetIterator(), parseData)) {
-			DLOG("Notes read: {}", parseData.notes.size());
-		} else {
-			ASSERT(false);
-		}
-
-		for (Note note : parseData.notes) {
-			g_NoteGraph.AddNote(note);
-		}
-	}
-
 	auto renderCtx = GetNoteGraphRenderCtx();
 	g_NoteGraph.Render(&renderCtx);
 }
