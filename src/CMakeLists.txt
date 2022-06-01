@@ -20,10 +20,8 @@ endif ()
 
 message("NoteVis Arch: ${ARCH_PREFIX}")
 
-
-# TODO: This way of getting files is not ideal
-file(GLOB_RECURSE ALL_SRC_FILES CONFIGURE_DEPENDS "*.h" "*.cpp" "*.hpp" "*.c" "*.cc")
-add_executable (NoteVis ${ALL_SRC_FILES})
+add_executable (NoteVis "")
+include(sourcelist)
 
 if (${NV_WINDOWS} MATCHES 1)
   target_link_libraries(NoteVis "${CMAKE_SOURCE_DIR}/lib/${ARCH_PREFIX}/windows/SDL2.lib")
