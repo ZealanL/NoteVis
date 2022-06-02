@@ -81,7 +81,7 @@ void Draw::TextInArea(string str, Area wrapArea, Color color, bool centerInArea)
 
 	ASSERT(!centerInArea); // Area centering is unimplemented
 
-	DL->AddText(font, fontSize, IMV(startPos), IMC(color), str.c_str());
+	DL->AddText(font, fontSize, IMV(startPos), IMC(color), str.c_str(), 0, wrapArea.Width());
 }
 
 void Draw::StartClip(Area area) {
