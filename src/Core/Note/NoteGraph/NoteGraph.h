@@ -16,7 +16,7 @@ struct GraphPos {
 	}
 
 	friend bool operator!=(const GraphPos& a, const GraphPos& b) {
-		return a != b;
+		return !(a == b);
 	}
 };
 
