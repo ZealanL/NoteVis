@@ -36,12 +36,9 @@ void UI::InitImGuiTheme() {
 		c[ImGuiCol_Border] = ImVec4(1.00f, 1.00f, 1.00f, 0.09f);
 		c[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 		c[ImGuiCol_FrameBg] = ImVec4(0.03f, 0.03f, 0.03f, 0.54f);
-		c[ImGuiCol_FrameBgHovered] = ImVec4(0.20f, 0.05f, 0.05f, 0.21f);
-		c[ImGuiCol_FrameBgActive] = ImVec4(1.00f, 0.00f, 0.00f, 0.67f);
+		c[ImGuiCol_FrameBgHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.10f);
+		c[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.27f);
 		c[ImGuiCol_TitleBgActive] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
-		c[ImGuiCol_CheckMark] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-		c[ImGuiCol_SliderGrab] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-		c[ImGuiCol_SliderGrabActive] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
 		c[ImGuiCol_Button] = ImVec4(0.25f, 0.25f, 0.25f, 0.40f);
 		c[ImGuiCol_ButtonHovered] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
 		c[ImGuiCol_ButtonActive] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -55,11 +52,8 @@ void UI::InitImGuiTheme() {
 		c[ImGuiCol_ResizeGripHovered] = ImVec4(0.60f, 0.60f, 0.60f, 0.67f);
 		c[ImGuiCol_ResizeGripActive] = ImVec4(0.88f, 0.88f, 0.88f, 0.95f);
 		c[ImGuiCol_Tab] = ImVec4(0.20f, 0.20f, 0.20f, 0.86f);
-		c[ImGuiCol_TabActive] = ImVec4(0.98f, 0.03f, 0.03f, 1.00f);
 		c[ImGuiCol_TabUnfocused] = ImVec4(0.14f, 0.14f, 0.14f, 0.97f);
-		c[ImGuiCol_TabUnfocusedActive] = ImVec4(0.42f, 0.14f, 0.14f, 1.00f);
 		c[ImGuiCol_TextSelectedBg] = ImVec4(1.00f, 0.00f, 0.00f, 0.35f);
-		c[ImGuiCol_NavHighlight] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
 
 		c[ImGuiCol_ChildBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.4f);
 	}
