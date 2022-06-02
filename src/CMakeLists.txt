@@ -21,7 +21,7 @@ endif ()
 message("NoteVis Arch: ${ARCH_PREFIX}")
 
 add_executable (NoteVis "")
-include(sourcelist)
+include(../sourcelist)
 
 if (${NV_WINDOWS} MATCHES 1)
   target_link_libraries(NoteVis "${CMAKE_SOURCE_DIR}/lib/${ARCH_PREFIX}/windows/SDL2.lib")
