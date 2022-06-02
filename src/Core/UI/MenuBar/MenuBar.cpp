@@ -147,6 +147,8 @@ void MenuBar::Draw() {
 
 			Option("DeleteSelectedNotes", noteEditsEnabled);
 			Option("InvertSelectedNotes", noteEditsEnabled);
+			Option("ReverseSelectedNotes", noteEditsEnabled);
+			Option("MakeSelectedNotesLegato", noteEditsEnabled);
 		}
 	);
 

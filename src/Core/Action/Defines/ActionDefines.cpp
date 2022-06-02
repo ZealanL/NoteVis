@@ -97,10 +97,75 @@ void ActionDefineSystem::Init() {
 			g_NoteGraph.MoveNote(selected, selected->time, highestKey - (selected->key - lowestKey), true);
 		
 		// Check overlap
-			for (Note* selected : g_NoteGraph.noteCache.selected)
-				g_NoteGraph.CheckFixNoteOverlap(selected);
+		for (Note* selected : g_NoteGraph.noteCache.selected)
+			g_NoteGraph.CheckFixNoteOverlap(selected);
 
 		}, Keybind(SDLK_i), true);
+
+	MAKE_ACTION(ReverseSelectedNotes, "Reverse", [] {
+
+		// Determine time range of selected notes
+		NoteTime startTime = INT_MAX;
+		NoteTime endTime = 0;
+		for (Note* selected : g_NoteGraph.noteCache.selected) {
+			startTime = MIN(startTime, selected->time);
+			endTime = MAX(endTime, selected->time + selected->duration);
+		}
+
+		if (endTime <= startTime) {
+			DLOG("Failed to reverse selected notes (no keys selected?)");
+			return;
+		}
+
+		// Reverse
+		for (Note* selected : g_NoteGraph.noteCache.selected) {
+			NoteTime distFromEnd = (endTime - (selected->time + selected->duration));
+			g_NoteGraph.MoveNote(selected, startTime + distFromEnd, selected->key, true);
+		}
+
+		// Check overlap
+		for (Note* selected : g_NoteGraph.noteCache.selected)
+			g_NoteGraph.CheckFixNoteOverlap(selected);
+
+		}, Keybind(SDLK_r), true);
+
+	MAKE_ACTION(MakeSelectedNotesLegato, "Make legato-length", [] {
+
+		// Sort selected notes by time
+		vector<Note*> selectedSorted = vector<Note*>(g_NoteGraph.noteCache.selected.begin(), g_NoteGraph.noteCache.selected.end());
+		std::sort(selectedSorted.begin(), selectedSorted.end(), 
+			[](Note* a, Note* b) {
+				return a->time < b->time;
+			}
+		);
+
+		int madeLegato = 0;
+
+		// Edit lengths
+		for (int i = 0; i < selectedSorted.size(); i++) {
+			Note* curNote = selectedSorted[i];
+			Note* nextNote = NULL;
+
+			for (int j = i + 1; j < selectedSorted.size(); j++) {
+				Note* potentialNext = selectedSorted[j];
+				if (potentialNext->time > curNote->time) {
+					nextNote = potentialNext;
+					break;
+				}
+			}
+
+			// Next note found for legato
+			if (nextNote) {
+				curNote->duration = nextNote->time - curNote->time;
+				g_NoteGraph.noteCache.OnNoteChanged(curNote, false);
+				madeLegato++;
+			}
+		}
+
+		if (madeLegato == 0)
+			NG_NOTIF("Multiple continuous notes must be selected in order to set legato lengths.");
+
+		}, Keybind(SDLK_l), true);
 
 #pragma region Moving notes
 
