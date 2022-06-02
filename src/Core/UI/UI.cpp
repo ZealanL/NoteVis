@@ -8,7 +8,7 @@ void UI::InitImGuiTheme() {
 	auto& s = ImGui::GetStyle();
 
 	{ // Sizes
-		s.WindowPadding =		{ 6, 6 };
+		s.WindowPadding =		{ 12, 12 };
 		s.FramePadding =		{ 4, 2 };
 		s.CellPadding =			{ 2, 2 };
 		s.ItemSpacing =			{ 8, 4 };
@@ -26,6 +26,8 @@ void UI::InitImGuiTheme() {
 			s.PopupRounding = 
 			s.TabRounding = 
 			s.WindowRounding = 1;
+
+		s.FrameBorderSize = 1;
 	}
 	
 	{ // Colors
@@ -58,6 +60,8 @@ void UI::InitImGuiTheme() {
 		c[ImGuiCol_TabUnfocusedActive] = ImVec4(0.42f, 0.14f, 0.14f, 1.00f);
 		c[ImGuiCol_TextSelectedBg] = ImVec4(1.00f, 0.00f, 0.00f, 0.35f);
 		c[ImGuiCol_NavHighlight] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
+
+		c[ImGuiCol_ChildBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.4f);
 	}
 }
 

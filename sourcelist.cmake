@@ -34,6 +34,8 @@ target_sources(NoteVis PRIVATE
 "Core/UI/LogNotif/LogNotif.h"
 "Core/UI/MenuBar/MenuBar.cpp"
 "Core/UI/MenuBar/MenuBar.h"
+"Core/UI/Widgets/Widgets.cpp"
+"Core/UI/Widgets/Widgets.h"
 "imgui/imconfig.h"
 "imgui/imgui.cpp"
 "imgui/imgui.h"
