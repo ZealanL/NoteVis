@@ -34,7 +34,7 @@ void FW::ShowError(string title, string text) {
 }
 
 void FW::ShowError(string title, wstring text) {
-	ShowMsgBox(Widen(title), text);
+	ShowMsgBox(Widen(title), text, MsgBoxType::ERROR);
 }
 
 bool FW::WarnYesNo(string title, string text) {
