@@ -54,5 +54,5 @@ public:
 
 	// For C++ iterator
 	T* begin() const { return IsEmpty() ? NULL : _data; }
-	T* end() const { return IsEmpty() ? NULL : _data + GetDataAllocSize(); }
+	T* end() const { return IsEmpty() ? NULL : _data + _size; }
 };
