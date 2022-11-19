@@ -179,6 +179,9 @@ bool NVFileSystem::OpenScore() {
 
 	fs::path openPath = FilePrompt("Open Score...", GetScoresPath(), "NoteVis Scores", SCORE_FILE_EXTENSION, false);
 
+	if (openPath.empty())
+		return false;
+
 	ByteDataStream scoreData;
 	if (!LoadFile(openPath, scoreData)) {
 		FW::ShowError(ERROR_TITLE, FMT(L"Failed to load score file from \"{}\".", openPath.wstring()));

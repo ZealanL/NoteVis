@@ -46,6 +46,14 @@ public:
 		this->insert(this->end(), (byte*)&object, ((byte*)&object) + sizeof(T));
 	}
 
+	// Write with inversed endian-ness
+	template <typename T>
+	void WriteInv(T object) {
+		for (int i = sizeof(T) - 1; i >= 0; i--) {
+			this->push_back(((byte*)&object)[i]);
+		}
+	}
+
 	void WriteString(string str) {
 		this->insert(this->end(), str.begin(), str.end());
 		this->push_back(NULL); // Add terminator

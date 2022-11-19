@@ -1,7 +1,5 @@
 #include "MIDIPlayer.h"
 
-#include "../../../libremidi/libremidi.hpp"
-
 struct MIDIMessage {
 	byte data[4] = { 0, 0, 0, 0 };
 
@@ -35,14 +33,14 @@ MIDIPlayer::~MIDIPlayer() {
 }
 
 void MIDIPlayer::NoteOn(KeyInt key, VelInt vel) {
-	auto msg = MIDIMessage({ (byte)libremidi::message_type::NOTE_ON, (byte)(key + KEYS_PER_OCTAVE), (byte)(vel/2), NULL });
+	auto msg = MIDIMessage({ 0x90, (byte)(key + KEYS_PER_OCTAVE), (byte)CLAMP(1, 127, vel / 2), NULL });
 #ifdef PLAT_WINDOWS
 	midiOutShortMsg(winMidiDevice, msg.AsInt());
 #endif
 }
 
 void MIDIPlayer::NoteOff(KeyInt key) {
-	auto msg = MIDIMessage({ (byte)libremidi::message_type::NOTE_OFF, (byte)(key + KEYS_PER_OCTAVE), NULL, NULL });
+	auto msg = MIDIMessage({ 0x90, (byte)(key + KEYS_PER_OCTAVE), NULL, NULL });
 #ifdef PLAT_WINDOWS
 	midiOutShortMsg(winMidiDevice, msg.AsInt());
 #endif
