@@ -34,6 +34,16 @@ public:
 			return result ? valResult : defaultVal;
 		}
 
+		// Read, then reverse the byte order
+		template<typename T>
+		T ReadValInv(T defaultVal) {
+			T result = ReadVal<T>(defaultVal);
+			byte* start = (byte*)&result;
+			byte* end = start + sizeof(T);
+			std::reverse(start, end);
+			return result;
+		}
+
 		string ReadString();
 	};
 
