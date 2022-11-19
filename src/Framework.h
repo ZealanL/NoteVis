@@ -170,13 +170,9 @@ namespace FW {
 
 	enum MsgBoxButton : uint32 {
 		MBB_INVALID,
-		MBB_OK,
-		MBB_CANCEL,
-		MBB_YES,
-		MBB_NO,
-		MBB_ABORT,
-		MBB_IGNORE,
-		MBB_RETRY,
+		MBB_YES, MBB_NO,
+		MBB_ABORT, MBB_RETRY, MBB_IGNORE,
+		MBB_OK, MBB_CANCEL,
 
 		MBB_AMOUNT,
 	};

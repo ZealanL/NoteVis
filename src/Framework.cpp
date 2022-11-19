@@ -51,7 +51,7 @@ FW::MsgBoxButton FW::ShowMsgBox(wstring title, wstring text, MsgBoxType type, Ms
 	string u8title = EncodeUTF8(title), u8text = EncodeUTF8(text);
 
 	constexpr const char* buttonNames[] = {
-		"INVALID", "Ok", "Cancel", "Yes", "No", "Abort", "Retry", "Ignore",
+		"INVALID", "Yes", "No", "Abort", "Retry", "Ignore", "Ok", "Cancel",
 	};
 
 	SASSERT(ARRAYSIZE(buttonNames) == MBB_AMOUNT, "buttonNames[] needs to be updated to match MsgBoxButtons enum");
