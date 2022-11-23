@@ -1,14 +1,40 @@
 #pragma once
 #include "../Framework.h"
 
+#include <streambuf>
+#include <istream>
+
+// Adapted from https://stackoverflow.com/questions/13059091/creating-an-input-stream-from-constant-memory/13059195#13059195
+struct ByteStreamBuf : std::streambuf {
+	ByteStreamBuf(const void* base, size_t size) {
+		char* p = (char*)base;
+		this->setg(p, p, p + size);
+	}
+};
+
+// Adapted from https://stackoverflow.com/questions/13059091/creating-an-input-stream-from-constant-memory/13059195#13059195
+struct IByteStream : virtual ByteStreamBuf, std::istream {
+	IByteStream(char const* base, size_t size)
+		: ByteStreamBuf(base, size)
+		, std::istream((std::streambuf*)(this)) {
+	}
+};
+
 // Steam of bytes for serialization
 class ByteDataStream : public vector<byte> {
 public:
-	struct ReadIterator {
+
+	struct ReadIterator : virtual ByteStreamBuf, std::istream {
 		const ByteDataStream* stream;
 		uint64 curIndex;
 
-		ReadIterator(const ByteDataStream* stream) : stream(stream), curIndex(0) {}
+		ReadIterator(const ByteDataStream* stream) : 
+			stream(stream), 
+			ByteStreamBuf(stream->GetBasePointer(), stream->size()),
+			std::istream((std::streambuf*)(this)) 
+		{
+			curIndex = 0;
+		}
 
 		int BytesLeft() {
 			return MAX(0, stream->size() - curIndex);
@@ -81,6 +107,10 @@ public:
 
 	ReadIterator GetIterator() const {
 		return ReadIterator(this);
+	}
+
+	IByteStream MakeIStream() {
+		return IByteStream(GetBasePointer(), size());
 	}
 
 	void ReadFromFileStream(std::ifstream& streamIn);
